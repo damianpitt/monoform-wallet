@@ -1,0 +1,38 @@
+name: Design proposal
+description: Propose a scoped product, architecture, or governance change
+title: "[Design]: "
+labels: [design, discussion]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What concrete user or project problem needs solving?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Smallest proposal
+      description: Describe the narrowest useful change.
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: Security and privacy effects
+      description: Include new trust boundaries, remote inputs, and failure modes.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: true

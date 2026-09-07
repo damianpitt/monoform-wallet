@@ -1,0 +1,21 @@
+.DS_Store
+.idea/
+.vscode/
+node_modules/
+dist/
+target/
+*.log
+*.swp
+.env
+.env.*
+!.env.example
+
+# Wallet material must never enter source control.
+*.seed
+*.mnemonic
+*.key
+*.keystore
+wallet.dat
+
+# Local source note retained outside the public repository.
+Sovereign Wallet.rtf

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="robots" content="noindex">
+  <title>Monoform — interface study</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="bar">
+    <a class="mark" href="#" aria-label="Monoform home">M<span>●</span></a>
+    <p class="network"><i></i> Demo · no wallet connected</p>
+    <button class="icon-button" aria-label="Open settings">···</button>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="balance-label">
+      <p id="balance-label" class="eyebrow">Total balance</p>
+      <h1><span id="balance">$12,840</span><small>.17</small></h1>
+      <p class="privacy">Fixed demonstration data</p>
+    </section>
+
+    <nav class="actions" aria-label="Wallet actions">
+      <button data-dialog="receive"><b>↓</b><span>Receive</span></button>
+      <button data-dialog="send"><b>↑</b><span>Send</span></button>
+    </nav>
+
+    <section class="assets" aria-labelledby="assets-title">
+      <div class="section-head">
+        <h2 id="assets-title">Assets</h2>
+        <p>5</p>
+      </div>
+      <button class="asset" data-asset="Bitcoin">
+        <span class="coin">₿</span><span><b>Bitcoin</b><small>0.091 840 BTC</small></span>
+        <span class="amount"><b>$8,934.10</b><small>69.6%</small></span>
+      </button>
+      <button class="asset" data-asset="Monero">
+        <span class="coin">M</span><span><b>Monero</b><small>11.42 XMR</small></span>
+        <span class="amount"><b>$2,091.44</b><small>16.3%</small></span>
+      </button>
+      <button class="asset" data-asset="Ethereum">
+        <span class="coin">Ξ</span><span><b>Ethereum</b><small>0.404 ETH</small></span>
+        <span class="amount"><b>$1,340.81</b><small>10.4%</small></span>
+      </button>
+      <button class="asset" data-asset="Dai">
+        <span class="coin">D</span><span><b>Dai</b><small>300.00 DAI · Ethereum</small></span>
+        <span class="amount"><b>$300.00</b><small>2.3%</small></span>
+      </button>
+      <button class="asset" data-asset="Tether USD">
+        <span class="coin">T</span><span><b>Tether USD</b><small>173.82 USDT · Ethereum</small></span>
+        <span class="amount"><b>$173.82</b><small>1.4%</small></span>
+      </button>
+    </section>
+  </main>
+
+  <footer><p>Sovereign Money, One form, Three Chains</p><p>Pre-alpha interface study · never enter a seed</p></footer>
+
+  <dialog id="sheet">
+    <form method="dialog">
+      <button class="close" aria-label="Close">×</button>
+      <p class="eyebrow" id="sheet-kicker">Demo</p>
+      <h2 id="sheet-title">Receive</h2>
+      <div id="sheet-body"></div>
+      <button class="primary">Done</button>
+    </form>
+  </dialog>
+  <script src="app.js"></script>
+</body>
+</html>
