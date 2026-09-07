@@ -1,0 +1,32 @@
+[package]
+name = "monoform-wallet"
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.98"
+publish = false
+description = "A minimal, auditable self-custody wallet interface"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/damianpitt/monoform-wallet"
+
+[dependencies]
+eframe = { version = "=0.36.1", default-features = false, features = [
+    "accesskit",
+    "default_fonts",
+    "glow",
+    "wayland",
+    "x11",
+] }
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+strip = true
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+dbg_macro = "deny"
+expect_used = "deny"
+todo = "deny"
+unwrap_used = "deny"

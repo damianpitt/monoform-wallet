@@ -37,7 +37,8 @@ the initial format. Logs and errors use opaque identifiers.
 
 Before secret entry, the UI must state that importing words from a hardware wallet
 removes hardware-only protection. The intended input is a fresh phrase generated
-offline and dedicated to Monoform. See `SEED_ARCHITECTURE.md`.
+offline and dedicated to Monoform. See `SEED_ARCHITECTURE.md` and
+`DERIVATION_AND_IMPORT.md`.
 
 ### Chain adapter
 

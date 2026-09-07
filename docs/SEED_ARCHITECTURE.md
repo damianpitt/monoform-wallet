@@ -19,6 +19,9 @@ Paths are part of the wallet format. They cannot change silently between release
 Every implementation must pass published, cross-implementation test vectors before it
 may accept a real mnemonic.
 
+See `DERIVATION_AND_IMPORT.md` for chain discovery, interoperability, and the import
+ceremony.
+
 ## Monero conversion
 
 A native Monero mnemonic is not a BIP39 HD-wallet root. Monoform follows the published

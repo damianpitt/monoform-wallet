@@ -14,11 +14,13 @@ Dates are intentionally absent. Security gates, not launch pressure, advance a p
 - [x] One-seed policy: dedicated 24-word BIP39 root with fixed chain derivations
 - [ ] Formal namespace and trademark clearance
 - [ ] Initial maintainers and governance sign-off
-- [ ] CI, dependency policy, and signed commits/tags policy
+- [x] CI for Rust formatting, compilation, linting, and tests
+- [x] Dependency policy and pinned Cargo resolution
+- [ ] Signed commits and tags policy
 
 ## Phase 1 — Bitcoin testnet alpha
 
-- [ ] Rust workspace and egui/eframe desktop shell
+- [x] Rust workspace and demonstration-only egui/eframe desktop shell
 - [ ] BIP39 English 24-word validation with official test vectors and empty passphrase
 - [ ] BIP32/BIP84 derivation and descriptor-based wallet state
 - [ ] Bitcoin Core-compatible testnet backend

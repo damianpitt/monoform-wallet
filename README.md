@@ -6,9 +6,9 @@ Monoform Wallet is an early, security-first open-source project. It rejects swap
 cards, yield, ads, accounts, telemetry, KYC, and financial clutter. The product has
 three verbs: **receive, send, verify**.
 
-This repository currently contains the product foundation and a non-signing visual
-prototype. **It is not a wallet yet. Do not enter a seed phrase or use it with real
-funds.**
+This repository currently contains the product foundation, a runnable non-signing Rust
+interface, and the original web interface study. **It is not a wallet yet. Do not enter
+a seed phrase or use it with real funds.**
 
 ## Product principles
 
@@ -27,7 +27,8 @@ Monoform is designed around one dedicated English 24-word BIP39 recovery phrase 
 Bitcoin, Monero, and Ethereum. Bitcoin follows BIP84, Ethereum follows BIP44, and
 Monero follows Ledger's published derivation at `m/44'/128'/0'/0/0`. The exact
 derivation and independent recovery requirements are specified in
-[Seed architecture](docs/SEED_ARCHITECTURE.md).
+[Seed architecture](docs/SEED_ARCHITECTURE.md) and
+[Chain derivation and import strategy](docs/DERIVATION_AND_IMPORT.md).
 
 > **Hardware-wallet boundary:** Never import the recovery phrase of a hardware wallet
 > that holds or has held real funds. Entering its words into Monoform exposes the seed
@@ -40,7 +41,7 @@ derivation and independent recovery requirements are specified in
 
 | Phase | Capability | Network |
 |---|---|---|
-| 0 | Interactive UI prototype; no keys, signing, or network calls | Demo data |
+| 0 | Runnable Rust UI shell; no keys, signing, storage, or network calls | Demo data |
 | 1 | Receive, send, balance, history; software signer | Bitcoin testnet |
 | 2 | Reproducible desktop releases and external security review | Bitcoin mainnet |
 | 3 | Monero adapter and independent review | Stagenet, then mainnet |
@@ -58,7 +59,19 @@ Monoform supports Bitcoin, Monero, and Ethereum mainnet. Ethereum assets are lim
 reviewed ERC-20 contracts committed in source. It does not import arbitrary tokens,
 load remote token lists, bridge assets, or sign unknown contract calls.
 
-## View the prototype
+## Run the Rust interface
+
+Install Rust 1.98.1 with `rustup`, then run:
+
+```sh
+cargo run --locked
+```
+
+The only direct application dependency is eframe 0.36.1, configured with its smaller
+Glow renderer and native accessibility support. `Cargo.lock` fixes the complete
+dependency graph.
+
+## View the original interface study
 
 Open `prototype/index.html` locally. It is dependency-free and uses fixed demo data.
 The prototype deliberately contains no seed field and makes no network requests.
