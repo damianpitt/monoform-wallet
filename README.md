@@ -67,9 +67,13 @@ Install Rust 1.98.1 with `rustup`, then run:
 cargo run --locked
 ```
 
-The only direct application dependency is eframe 0.36.1, configured with its smaller
-Glow renderer and native accessibility support. `Cargo.lock` fixes the complete
-dependency graph.
+The interface uses eframe 0.36.1 with its Glow renderer and native accessibility
+support. The offline seed core adds `bip39`, `unicode-normalization`, and `zeroize`.
+`Cargo.lock` fixes the complete dependency graph.
+
+An offline-only BIP39 seed core exists, but there is no seed-entry UI or wallet-import
+path. It must not be used with real funds before vault, derivation, and independent
+review gates pass.
 
 ## View the original interface study
 

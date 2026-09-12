@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+// Phase 0 is a visual shell only: no secret input, wallet state, or network client.
+
 use eframe::egui::{self, Align, Color32, Layout, RichText, Stroke, Vec2};
 
 const INK: Color32 = Color32::from_rgb(238, 238, 235);
@@ -7,6 +9,7 @@ const MUTED: Color32 = Color32::from_rgb(152, 152, 146);
 const PANEL: Color32 = Color32::from_rgb(27, 27, 26);
 const BORDER: Color32 = Color32::from_rgb(55, 55, 52);
 
+// Fixed sample balances keep this interface safe to run before any wallet core exists.
 const ASSETS: [Asset; 5] = [
     Asset::new("₿", "Bitcoin", "0.091 840 BTC", "$8,934.10"),
     Asset::new("M", "Monero", "11.42 XMR", "$2,091.44"),
@@ -21,6 +24,7 @@ fn main() -> eframe::Result {
             .with_inner_size([460.0, 720.0])
             .with_min_inner_size([360.0, 560.0]),
         renderer: eframe::Renderer::Glow,
+        // Do not persist even UI window state in this demonstration build.
         persist_window: false,
         ..Default::default()
     };
@@ -62,6 +66,7 @@ enum Detail {
     Asset(usize),
 }
 
+// Only the currently open demonstration dialog is held in memory.
 #[derive(Default)]
 struct MonoformApp {
     detail: Option<Detail>,
@@ -166,6 +171,7 @@ impl MonoformApp {
             return;
         };
 
+        // These dialogs explain future flows; they never construct a transaction.
         let (title, body) = match detail {
             Detail::Receive => (
                 "Receive · demonstration",

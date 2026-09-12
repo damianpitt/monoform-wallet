@@ -19,6 +19,12 @@ Paths are part of the wallet format. They cannot change silently between release
 Every implementation must pass published, cross-implementation test vectors before it
 may accept a real mnemonic.
 
+The current offline seed core validates the English 24-word format and derives the
+BIP39 seed without a UI or storage path. It zeroizes owned inputs, the mnemonic's word
+indices, and the returned seed on drop. This is best-effort memory hygiene, not a claim
+that library internals, compiler-created copies, swap, or crash dumps are fully erased.
+Real-phrase import remains disabled pending the vault and independent review.
+
 See `DERIVATION_AND_IMPORT.md` for chain discovery, interoperability, and the import
 ceremony.
 

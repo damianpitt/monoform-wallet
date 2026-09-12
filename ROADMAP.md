@@ -21,7 +21,8 @@ Dates are intentionally absent. Security gates, not launch pressure, advance a p
 ## Phase 1 — Bitcoin testnet alpha
 
 - [x] Rust workspace and demonstration-only egui/eframe desktop shell
-- [ ] BIP39 English 24-word validation with official test vectors and empty passphrase
+- [x] Offline BIP39 English 24-word validation with public vectors and empty passphrase
+- [x] Test-only BIP39 compatibility checks using public vectors (no import path)
 - [ ] BIP32/BIP84 derivation and descriptor-based wallet state
 - [ ] Bitcoin Core-compatible testnet backend
 - [ ] Receive, coin-aware send, fee selection, and transaction review

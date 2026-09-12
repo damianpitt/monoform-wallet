@@ -9,6 +9,7 @@ license = "GPL-3.0-or-later"
 repository = "https://github.com/damianpitt/monoform-wallet"
 
 [dependencies]
+bip39 = { version = "=2.2.2", default-features = false, features = ["alloc", "zeroize"] }
 eframe = { version = "=0.36.1", default-features = false, features = [
     "accesskit",
     "default_fonts",
@@ -16,6 +17,8 @@ eframe = { version = "=0.36.1", default-features = false, features = [
     "wayland",
     "x11",
 ] }
+unicode-normalization = { version = "=0.1.25", default-features = false }
+zeroize = { version = "=1.9.0", default-features = false, features = ["alloc"] }
 
 [profile.release]
 codegen-units = 1
