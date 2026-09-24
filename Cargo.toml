@@ -10,6 +10,9 @@ repository = "https://github.com/damianpitt/monoform-wallet"
 
 [dependencies]
 bip39 = { version = "=2.2.2", default-features = false, features = ["alloc", "zeroize"] }
+bip32 = { version = "=0.5.3", default-features = false, features = ["secp256k1"] }
+bitcoin_hashes = { version = "=0.14.101", default-features = false }
+bech32 = { version = "=0.11.1", default-features = false, features = ["alloc"] }
 eframe = { version = "=0.36.1", default-features = false, features = [
     "accesskit",
     "default_fonts",
@@ -19,6 +22,9 @@ eframe = { version = "=0.36.1", default-features = false, features = [
 ] }
 unicode-normalization = { version = "=0.1.25", default-features = false }
 zeroize = { version = "=1.9.0", default-features = false, features = ["alloc"] }
+
+[dev-dependencies]
+bitcoin = { version = "=0.32.102", default-features = false, features = ["std"] }
 
 [profile.release]
 codegen-units = 1

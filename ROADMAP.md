@@ -23,7 +23,8 @@ Dates are intentionally absent. Security gates, not launch pressure, advance a p
 - [x] Rust workspace and demonstration-only egui/eframe desktop shell
 - [x] Offline BIP39 English 24-word validation with public vectors and empty passphrase
 - [x] Test-only BIP39 compatibility checks using public vectors (no import path)
-- [ ] BIP32/BIP84 derivation and descriptor-based wallet state
+- [x] Offline BIP84 testnet receive-address derivation with published and independent vectors
+- [ ] Complete BIP84 branches, account descriptors, and wallet state
 - [ ] Bitcoin Core-compatible testnet backend
 - [ ] Receive, coin-aware send, fee selection, and transaction review
 - [ ] Encrypted local keystore using operating-system facilities
