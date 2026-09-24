@@ -53,7 +53,7 @@ The implementation uses Rust with egui/eframe. Linux and macOS are the first sup
 platforms; Android follows only after the desktop core is proven. Chain logic is isolated
 behind narrow compile-time adapters. See [Architecture](docs/ARCHITECTURE.md),
 [Threat model](docs/THREAT_MODEL.md), [Locked decisions](docs/LOCKED_DECISIONS.md),
-and [Roadmap](ROADMAP.md).
+[Phase 3 Monero preparation](docs/PHASE_3_MONERO.md), and [Roadmap](ROADMAP.md).
 
 Monoform supports Bitcoin, Monero, and Ethereum mainnet. Ethereum assets are limited to
 reviewed ERC-20 contracts committed in source. It does not import arbitrary tokens,

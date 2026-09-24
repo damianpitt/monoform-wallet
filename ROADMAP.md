@@ -46,6 +46,10 @@ maintainers.
 
 ## Phase 3 — Monero
 
+Preparation and release gates are defined in
+[`docs/PHASE_3_MONERO.md`](docs/PHASE_3_MONERO.md). Planning may proceed early; Monero
+wallet integration does not bypass the Phase 1 and Phase 2 exit gates.
+
 - [ ] Implement Ledger-compatible BIP39 derivation at `m/44'/128'/0'/0/0`
 - [ ] Export private keys and a standard 25-word legacy mnemonic for offline recovery
 - [ ] Test recovery against Ledger-derived vectors and independent Monero tooling

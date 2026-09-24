@@ -90,6 +90,7 @@ release processes are independently reviewed. Windows and iOS are not initial ta
 4. Update mechanism and release-key custody
 5. Reproducible build targets
 6. Validation test vectors for the locked seed architecture
-7. ERC-20 allowlist governance and issuer-control disclosures
-8. Future ZK-rollup selection and removal criteria
-9. Lightning external-node versus embedded-node boundary
+7. Monero wallet engine, daemon protocol, and privacy model
+8. ERC-20 allowlist governance and issuer-control disclosures
+9. Future ZK-rollup selection and removal criteria
+10. Lightning external-node versus embedded-node boundary
