@@ -34,10 +34,12 @@ wallet format, migration design, public test vectors, and governance approval.
 Monoform derives the native SegWit account at `m/84'/0'/0'`. Receiving addresses use
 `m/84'/0'/0'/0/index`; change addresses use `m/84'/0'/0'/1/index`.
 
-The offline pre-alpha testnet check uses coin type `1`, so its only exposed path is
-`m/84'/1'/0'/0/index` and its addresses begin with `tb1`. This does not change the
-locked mainnet recovery path above. There is no Bitcoin network connection, signing,
-storage, or user-facing phrase import yet.
+The offline pre-alpha testnet account uses coin type `1`. It removes private derivation
+material before retaining public receive and change branches, then advances separate
+in-memory cursors for `m/84'/1'/0'/0/index` and `m/84'/1'/0'/1/index`. Its addresses
+begin with `tb1`. This does not change the locked mainnet recovery path above. There
+is no descriptor persistence, network connection, signing, storage, or user-facing
+phrase import yet.
 
 Import performs deterministic address discovery from index zero. The gap limit and
 backend strategy must be fixed before testnet import is enabled. Recovery in another

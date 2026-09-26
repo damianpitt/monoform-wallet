@@ -1,6 +1,6 @@
 //! Offline-only recovery-seed core. The desktop UI does not call this library yet.
 
-use bip32::{ChildNumber, XPrv};
+use bip32::{ChildNumber, XPrv, XPub};
 use bip39::{Language, Mnemonic};
 use bitcoin_hashes::{Hash, hash160};
 use unicode_normalization::UnicodeNormalization;
@@ -25,6 +25,14 @@ pub enum BitcoinError {
     DerivationFailed,
 }
 
+/// Public testnet branches and their next in-memory address indices.
+pub struct BitcoinTestnetAccount {
+    receive: XPub,
+    change: XPub,
+    next_receive: u32,
+    next_change: u32,
+}
+
 impl OfflineSeed {
     /// Accept only the locked English 24-word format with an empty passphrase.
     /// The caller transfers ownership of the phrase; no UI path exists yet.
@@ -47,32 +55,49 @@ impl OfflineSeed {
         Ok(Self(Zeroizing::new(mnemonic.to_seed_normalized(""))))
     }
 
-    /// Derive one native-SegWit testnet receive address; no network or signer exists.
-    pub fn bitcoin_testnet_receive_address(&self, index: u32) -> Result<String, BitcoinError> {
-        if index >= ChildNumber::HARDENED_FLAG {
-            return Err(BitcoinError::InvalidIndex);
-        }
-
-        let key = bitcoin_public_key(&self.0, 1, 0, index)?;
-        bitcoin_address(&key, bech32::hrp::TB)
+    /// Remove private derivation material before returning public account state.
+    pub fn bitcoin_testnet_account(&self) -> Result<BitcoinTestnetAccount, BitcoinError> {
+        let account = bitcoin_account(&self.0, 1)?;
+        Ok(BitcoinTestnetAccount {
+            receive: bitcoin_branch(&account, 0)?,
+            change: bitcoin_branch(&account, 1)?,
+            next_receive: 0,
+            next_change: 0,
+        })
     }
 }
 
-fn bitcoin_address(key: &[u8; 33], hrp: bech32::Hrp) -> Result<String, BitcoinError> {
+impl BitcoinTestnetAccount {
+    pub fn next_receive_address(&mut self) -> Result<String, BitcoinError> {
+        next_address(&self.receive, &mut self.next_receive)
+    }
+
+    pub fn next_change_address(&mut self) -> Result<String, BitcoinError> {
+        next_address(&self.change, &mut self.next_change)
+    }
+}
+
+fn next_address(branch: &XPub, index: &mut u32) -> Result<String, BitcoinError> {
+    let address = bitcoin_address(branch, *index, bech32::hrp::TB)?;
+    *index += 1;
+    Ok(address)
+}
+
+fn bitcoin_address(branch: &XPub, index: u32, hrp: bech32::Hrp) -> Result<String, BitcoinError> {
+    let child = ChildNumber::new(index, false).map_err(|_| BitcoinError::InvalidIndex)?;
+    let key = branch
+        .derive_child(child)
+        .map_err(|_| BitcoinError::DerivationFailed)?
+        .to_bytes();
     // BIP84 P2WPKH is witness v0 over HASH160 of the compressed public key.
-    let program = hash160::Hash::hash(key);
+    let program = hash160::Hash::hash(&key);
     bech32::segwit::encode_v0(hrp, program.as_byte_array())
         .map_err(|_| BitcoinError::DerivationFailed)
 }
 
-// The coin type and branch are internal so production cannot select mainnet or change.
-fn bitcoin_public_key(
-    seed: &[u8; 64],
-    coin_type: u32,
-    branch: u32,
-    index: u32,
-) -> Result<[u8; 33], BitcoinError> {
-    // BIP84: m/84'/coin_type'/0'/branch/index. The final two steps are public.
+// The coin type is internal so production cannot select mainnet.
+fn bitcoin_account(seed: &[u8; 64], coin_type: u32) -> Result<XPub, BitcoinError> {
+    // BIP84 account: m/84'/coin_type'/0'.
     let hardened = ChildNumber::HARDENED_FLAG;
     let account_path = [
         ChildNumber(84 | hardened),
@@ -84,18 +109,18 @@ fn bitcoin_public_key(
         .into_iter()
         .try_fold(root, |key, number| key.derive_child(number))
         .map_err(|_| BitcoinError::DerivationFailed)?;
-    // Do not derive non-hardened receive children as private keys.
-    let receive = account
-        .public_key()
-        .derive_child(ChildNumber(branch))
-        .and_then(|key| key.derive_child(ChildNumber(index)))
-        .map_err(|_| BitcoinError::DerivationFailed)?;
-    Ok(receive.to_bytes())
+    Ok(account.public_key())
+}
+
+fn bitcoin_branch(account: &XPub, branch: u32) -> Result<XPub, BitcoinError> {
+    account
+        .derive_child(ChildNumber::new(branch, false).map_err(|_| BitcoinError::InvalidIndex)?)
+        .map_err(|_| BitcoinError::DerivationFailed)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{BitcoinError, OfflineSeed, bitcoin_address, bitcoin_public_key};
+    use super::{BitcoinError, OfflineSeed, bitcoin_account, bitcoin_address, bitcoin_branch};
     use ::bip32::ChildNumber;
     use bip39::{Language, Mnemonic};
     use bitcoin::{
@@ -127,15 +152,17 @@ mod tests {
         let mnemonic = Mnemonic::parse_in_normalized(Language::English, fixture)
             .unwrap_or_else(|_| panic!("published BIP84 fixture must parse"));
         let seed = mnemonic.to_seed_normalized("");
+        let account = bitcoin_account(&seed, 0)
+            .unwrap_or_else(|_| panic!("published BIP84 account must derive"));
         for (branch, index, expected) in [
             (0, 0, "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu"),
             (0, 1, "bc1qnjg0jd8228aq7egyzacy8cys3knf9xvrerkf9g"),
             (1, 0, "bc1q8c6fshw2dlwun7ekn9qwf37cu2rn755upcp6el"),
         ] {
-            let key = bitcoin_public_key(&seed, 0, branch, index)
-                .unwrap_or_else(|_| panic!("published BIP84 path must derive"));
+            let branch = bitcoin_branch(&account, branch)
+                .unwrap_or_else(|_| panic!("published BIP84 branch must derive"));
             assert_eq!(
-                bitcoin_address(&key, bech32::hrp::BC)
+                bitcoin_address(&branch, index, bech32::hrp::BC)
                     .unwrap_or_else(|_| panic!("published address must encode")),
                 expected
             );
@@ -143,36 +170,41 @@ mod tests {
     }
 
     #[test]
-    fn only_unhardened_testnet_receive_indices_are_exposed() {
+    fn tracks_public_testnet_receive_and_change_branches() {
         let seed = OfflineSeed::from_phrase(PUBLIC_PHRASE.to_owned())
             .unwrap_or_else(|_| panic!("public 24-word fixture must parse"));
-        let address = seed
-            .bitcoin_testnet_receive_address(0)
-            .unwrap_or_else(|_| panic!("first testnet address must derive"));
+        let mut account = seed
+            .bitcoin_testnet_account()
+            .unwrap_or_else(|_| panic!("public testnet account must derive"));
+        let addresses = [
+            account.next_receive_address(),
+            account.next_receive_address(),
+            account.next_change_address(),
+        ]
+        .map(|address| address.unwrap_or_else(|_| panic!("testnet address must derive")));
+
         // Compare the 24-word testnet result with rust-bitcoin's independent BIP32.
         let secp = Secp256k1::new();
         let root = bitcoin_bip32::Xpriv::new_master(Network::Testnet, &seed.0[..])
             .unwrap_or_else(|_| panic!("public fixture root must derive"));
-        let path = "m/84'/1'/0'/0/0"
-            .parse::<bitcoin_bip32::DerivationPath>()
-            .unwrap_or_else(|_| panic!("fixed testnet path must parse"));
-        let child = root
-            .derive_priv(&secp, &path)
-            .unwrap_or_else(|_| panic!("public fixture child must derive"));
-        let key = CompressedPublicKey::from_private_key(&secp, &child.to_priv())
-            .unwrap_or_else(|_| panic!("derived key must be compressed"));
+        for ((branch, index), address) in [(0, 0), (0, 1), (1, 0)].into_iter().zip(addresses) {
+            let path = format!("m/84'/1'/0'/{branch}/{index}")
+                .parse::<bitcoin_bip32::DerivationPath>()
+                .unwrap_or_else(|_| panic!("fixed testnet path must parse"));
+            let child = root
+                .derive_priv(&secp, &path)
+                .unwrap_or_else(|_| panic!("public fixture child must derive"));
+            let key = CompressedPublicKey::from_private_key(&secp, &child.to_priv())
+                .unwrap_or_else(|_| panic!("derived key must be compressed"));
+            assert_eq!(
+                address,
+                Address::p2wpkh(&key, KnownHrp::Testnets).to_string()
+            );
+        }
+
+        account.next_receive = ChildNumber::HARDENED_FLAG;
         assert_eq!(
-            bitcoin_public_key(&seed.0, 1, 0, 0)
-                .unwrap_or_else(|_| panic!("testnet key must derive")),
-            key.to_bytes()
-        );
-        assert_eq!(
-            address,
-            Address::p2wpkh(&key, KnownHrp::Testnets).to_string()
-        );
-        assert!(address.starts_with("tb1q"));
-        assert_eq!(
-            seed.bitcoin_testnet_receive_address(ChildNumber::HARDENED_FLAG),
+            account.next_receive_address(),
             Err(BitcoinError::InvalidIndex)
         );
     }

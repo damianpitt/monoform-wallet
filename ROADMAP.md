@@ -24,7 +24,8 @@ Dates are intentionally absent. Security gates, not launch pressure, advance a p
 - [x] Offline BIP39 English 24-word validation with public vectors and empty passphrase
 - [x] Test-only BIP39 compatibility checks using public vectors (no import path)
 - [x] Offline BIP84 testnet receive-address derivation with published and independent vectors
-- [ ] Complete BIP84 branches, account descriptors, and wallet state
+- [x] Public testnet receive/change branches with deterministic in-memory cursors
+- [ ] Account descriptors and persisted wallet state
 - [ ] Bitcoin Core-compatible testnet backend
 - [ ] Receive, coin-aware send, fee selection, and transaction review
 - [ ] Encrypted local keystore using operating-system facilities
