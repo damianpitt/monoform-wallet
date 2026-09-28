@@ -26,13 +26,14 @@ that library internals, compiler-created copies, swap, or crash dumps are fully 
 Real-phrase import remains disabled pending the vault and independent review.
 
 The offline Bitcoin check derives a testnet BIP84 account using RustCrypto `bip32`,
-removes its private derivation material, and retains only public receive/change branches
-with separate in-memory address cursors. It encodes P2WPKH addresses with
-`bitcoin_hashes` and `bech32`; `rust-bitcoin` is test-only for an independent
-cross-check. Published BIP84 vectors and an independent 24-word testnet comparison
-cover this narrow path. This is not a complete memory-safety claim: upstream BIP32
-chain-code temporaries and compiler-created copies are not proven zeroized. The review
-gate remains closed to real phrases and funds.
+discards temporary extended private keys, and returns only the public account key with
+separate in-memory address cursors. It exports checksummed BIP380 watch-only descriptors
+and encodes P2WPKH addresses with `bitcoin_hashes` and `bech32`; `rust-bitcoin` is
+test-only for an independent cross-check. Published BIP84 and BIP380 vectors plus an
+independent 24-word testnet comparison cover this narrow path. This is not a complete
+memory-safety claim: the caller still owns `OfflineSeed`, and upstream BIP32 chain-code
+temporaries and compiler-created copies are not proven zeroized. The review gate remains
+closed to real phrases and funds.
 
 See `DERIVATION_AND_IMPORT.md` for chain discovery, interoperability, and the import
 ceremony.

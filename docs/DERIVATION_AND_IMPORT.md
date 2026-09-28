@@ -34,12 +34,14 @@ wallet format, migration design, public test vectors, and governance approval.
 Monoform derives the native SegWit account at `m/84'/0'/0'`. Receiving addresses use
 `m/84'/0'/0'/0/index`; change addresses use `m/84'/0'/0'/1/index`.
 
-The offline pre-alpha testnet account uses coin type `1`. It removes private derivation
-material before retaining public receive and change branches, then advances separate
-in-memory cursors for `m/84'/1'/0'/0/index` and `m/84'/1'/0'/1/index`. Its addresses
-begin with `tb1`. This does not change the locked mainnet recovery path above. There
-is no descriptor persistence, network connection, signing, storage, or user-facing
-phrase import yet.
+The offline pre-alpha testnet account uses coin type `1`. Temporary extended private
+keys do not escape construction; the returned account retains only public material and
+advances separate in-memory cursors for `m/84'/1'/0'/0/index` and
+`m/84'/1'/0'/1/index`. Its addresses begin with `tb1`. This does not change the locked
+mainnet recovery path above. There are checksummed BIP380 watch-only descriptors for
+both branches. They contain the root fingerprint, fixed account origin, account `tpub`,
+and branch wildcard, but no private key. There is no descriptor persistence, network
+connection, signing, storage, or user-facing phrase import yet.
 
 Import performs deterministic address discovery from index zero. The gap limit and
 backend strategy must be fixed before testnet import is enabled. Recovery in another
@@ -108,6 +110,7 @@ Secret entry remains disabled until all of the following are complete:
 
 - [BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki)
 - [BIP84](https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki)
+- [BIP380](https://github.com/bitcoin/bips/blob/master/bip-0380.mediawiki)
 - [BIP44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)
 - [SLIP-0044 coin types](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
 - [Ledger Monero key initialization](https://github.com/LedgerHQ/app-monero/blob/develop/src/monero_init.c#L845-L922)

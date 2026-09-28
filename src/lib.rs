@@ -1,6 +1,6 @@
 //! Offline-only recovery-seed core. The desktop UI does not call this library yet.
 
-use bip32::{ChildNumber, XPrv, XPub};
+use bip32::{ChildNumber, KeyFingerprint, Prefix, XPrv, XPub};
 use bip39::{Language, Mnemonic};
 use bitcoin_hashes::{Hash, hash160};
 use unicode_normalization::UnicodeNormalization;
@@ -23,14 +23,21 @@ pub enum SeedError {
 pub enum BitcoinError {
     InvalidIndex,
     DerivationFailed,
+    DescriptorEncoding,
 }
 
-/// Public testnet branches and their next in-memory address indices.
+/// Public testnet account material and its next in-memory address indices.
 pub struct BitcoinTestnetAccount {
-    receive: XPub,
-    change: XPub,
+    fingerprint: KeyFingerprint,
+    account: XPub,
     next_receive: u32,
     next_change: u32,
+}
+
+/// Bitcoin Core-compatible public descriptors. They contain no private key.
+pub struct BitcoinTestnetDescriptors {
+    pub receive: String,
+    pub change: String,
 }
 
 impl OfflineSeed {
@@ -55,12 +62,12 @@ impl OfflineSeed {
         Ok(Self(Zeroizing::new(mnemonic.to_seed_normalized(""))))
     }
 
-    /// Remove private derivation material before returning public account state.
+    /// Return public state; temporary extended private keys do not escape.
     pub fn bitcoin_testnet_account(&self) -> Result<BitcoinTestnetAccount, BitcoinError> {
-        let account = bitcoin_account(&self.0, 1)?;
+        let (fingerprint, account) = bitcoin_account(&self.0, 1)?;
         Ok(BitcoinTestnetAccount {
-            receive: bitcoin_branch(&account, 0)?,
-            change: bitcoin_branch(&account, 1)?,
+            fingerprint,
+            account,
             next_receive: 0,
             next_change: 0,
         })
@@ -69,21 +76,29 @@ impl OfflineSeed {
 
 impl BitcoinTestnetAccount {
     pub fn next_receive_address(&mut self) -> Result<String, BitcoinError> {
-        next_address(&self.receive, &mut self.next_receive)
+        next_address(&self.account, 0, &mut self.next_receive)
     }
 
     pub fn next_change_address(&mut self) -> Result<String, BitcoinError> {
-        next_address(&self.change, &mut self.next_change)
+        next_address(&self.account, 1, &mut self.next_change)
+    }
+
+    pub fn descriptors(&self) -> Result<BitcoinTestnetDescriptors, BitcoinError> {
+        let key = format!("{}", self.account.to_extended_key(Prefix::TPUB));
+        Ok(BitcoinTestnetDescriptors {
+            receive: bitcoin_descriptor(self.fingerprint, &key, 0)?,
+            change: bitcoin_descriptor(self.fingerprint, &key, 1)?,
+        })
     }
 }
 
-fn next_address(branch: &XPub, index: &mut u32) -> Result<String, BitcoinError> {
-    let address = bitcoin_address(branch, *index, bech32::hrp::TB)?;
+fn next_address(account: &XPub, branch: u32, index: &mut u32) -> Result<String, BitcoinError> {
+    let address = bitcoin_address(bitcoin_branch(account, branch)?, *index, bech32::hrp::TB)?;
     *index += 1;
     Ok(address)
 }
 
-fn bitcoin_address(branch: &XPub, index: u32, hrp: bech32::Hrp) -> Result<String, BitcoinError> {
+fn bitcoin_address(branch: XPub, index: u32, hrp: bech32::Hrp) -> Result<String, BitcoinError> {
     let child = ChildNumber::new(index, false).map_err(|_| BitcoinError::InvalidIndex)?;
     let key = branch
         .derive_child(child)
@@ -96,7 +111,10 @@ fn bitcoin_address(branch: &XPub, index: u32, hrp: bech32::Hrp) -> Result<String
 }
 
 // The coin type is internal so production cannot select mainnet.
-fn bitcoin_account(seed: &[u8; 64], coin_type: u32) -> Result<XPub, BitcoinError> {
+fn bitcoin_account(
+    seed: &[u8; 64],
+    coin_type: u32,
+) -> Result<(KeyFingerprint, XPub), BitcoinError> {
     // BIP84 account: m/84'/coin_type'/0'.
     let hardened = ChildNumber::HARDENED_FLAG;
     let account_path = [
@@ -105,11 +123,12 @@ fn bitcoin_account(seed: &[u8; 64], coin_type: u32) -> Result<XPub, BitcoinError
         ChildNumber(hardened),
     ];
     let root = XPrv::new(seed).map_err(|_| BitcoinError::DerivationFailed)?;
+    let fingerprint = root.public_key().fingerprint();
     let account = account_path
         .into_iter()
         .try_fold(root, |key, number| key.derive_child(number))
         .map_err(|_| BitcoinError::DerivationFailed)?;
-    Ok(account.public_key())
+    Ok((fingerprint, account.public_key()))
 }
 
 fn bitcoin_branch(account: &XPub, branch: u32) -> Result<XPub, BitcoinError> {
@@ -118,9 +137,73 @@ fn bitcoin_branch(account: &XPub, branch: u32) -> Result<XPub, BitcoinError> {
         .map_err(|_| BitcoinError::DerivationFailed)
 }
 
+fn bitcoin_descriptor(
+    fingerprint: KeyFingerprint,
+    account: &str,
+    branch: u32,
+) -> Result<String, BitcoinError> {
+    let [a, b, c, d] = fingerprint;
+    descriptor_checksum(&format!(
+        "wpkh([{a:02x}{b:02x}{c:02x}{d:02x}/84h/1h/0h]{account}/{branch}/*)"
+    ))
+}
+
+// BIP380's checksum detects public-text mistakes; it is not a security boundary.
+fn descriptor_checksum(descriptor: &str) -> Result<String, BitcoinError> {
+    const INPUT: &[u8] = b"0123456789()[],'/*abcdefgh@:$%{}IJKLMNOPQRSTUVWXYZ&+-.;<=>?!^_|~ijklmnopqrstuvwxyzABCDEFGH`#\"\\ ";
+    const OUTPUT: &[u8] = b"qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+    let (mut checksum, mut group, mut count) = (1_u64, 0_u64, 0_u8);
+
+    for byte in descriptor.bytes() {
+        let position = INPUT
+            .iter()
+            .position(|allowed| *allowed == byte)
+            .ok_or(BitcoinError::DescriptorEncoding)?;
+        checksum = descriptor_polymod(checksum, (position & 31) as u64);
+        group = group * 3 + (position >> 5) as u64;
+        count += 1;
+        if count == 3 {
+            checksum = descriptor_polymod(checksum, group);
+            (group, count) = (0, 0);
+        }
+    }
+    if count > 0 {
+        checksum = descriptor_polymod(checksum, group);
+    }
+    for _ in 0..8 {
+        checksum = descriptor_polymod(checksum, 0);
+    }
+    checksum ^= 1;
+    let suffix = (0..8)
+        .map(|index| OUTPUT[((checksum >> (5 * (7 - index))) & 31) as usize] as char)
+        .collect::<String>();
+    Ok(format!("{descriptor}#{suffix}"))
+}
+
+fn descriptor_polymod(checksum: u64, value: u64) -> u64 {
+    const GENERATOR: [u64; 5] = [
+        0xf5dee51989,
+        0xa9fdca3312,
+        0x1bab10e32d,
+        0x3706b1677a,
+        0x644d626ffd,
+    ];
+    let top = checksum >> 35;
+    let mut next = ((checksum & 0x7ffffffff) << 5) ^ value;
+    for (bit, generator) in GENERATOR.into_iter().enumerate() {
+        if (top >> bit) & 1 != 0 {
+            next ^= generator;
+        }
+    }
+    next
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{BitcoinError, OfflineSeed, bitcoin_account, bitcoin_address, bitcoin_branch};
+    use super::{
+        BitcoinError, OfflineSeed, bitcoin_account, bitcoin_address, bitcoin_branch,
+        descriptor_checksum,
+    };
     use ::bip32::ChildNumber;
     use bip39::{Language, Mnemonic};
     use bitcoin::{
@@ -131,6 +214,8 @@ mod tests {
     // Public Trezor vector; this mnemonic must never protect real funds.
     const PUBLIC_PHRASE: &str = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art";
     const EMPTY_SEED: &str = "408b285c123836004f4b8842c89324c1f01382450c0d439af345ba7fc49acf705489c6fc77dbd4e3dc1dd8cc6bc9f043db8ada1e243c4a0eafb290d399480840";
+    const RECEIVE_DESCRIPTOR: &str = "wpkh([5436d724/84h/1h/0h]tpubDCWivZp6qaqCALCt8MyLqAb3awnWm4hfbBPjdZqirYFXYeZ5YsfbWVaPacULZTGtK1RPBSZ92UWNjnhL4fB9UVrF2FjgW8cgmBjxPBmB4iB/0/*)#hdxns7pj";
+    const CHANGE_DESCRIPTOR: &str = "wpkh([5436d724/84h/1h/0h]tpubDCWivZp6qaqCALCt8MyLqAb3awnWm4hfbBPjdZqirYFXYeZ5YsfbWVaPacULZTGtK1RPBSZ92UWNjnhL4fB9UVrF2FjgW8cgmBjxPBmB4iB/1/*)#xerjdt32";
 
     #[test]
     fn derives_locked_empty_passphrase_seed() {
@@ -152,7 +237,7 @@ mod tests {
         let mnemonic = Mnemonic::parse_in_normalized(Language::English, fixture)
             .unwrap_or_else(|_| panic!("published BIP84 fixture must parse"));
         let seed = mnemonic.to_seed_normalized("");
-        let account = bitcoin_account(&seed, 0)
+        let (_, account) = bitcoin_account(&seed, 0)
             .unwrap_or_else(|_| panic!("published BIP84 account must derive"));
         for (branch, index, expected) in [
             (0, 0, "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu"),
@@ -162,7 +247,7 @@ mod tests {
             let branch = bitcoin_branch(&account, branch)
                 .unwrap_or_else(|_| panic!("published BIP84 branch must derive"));
             assert_eq!(
-                bitcoin_address(&branch, index, bech32::hrp::BC)
+                bitcoin_address(branch, index, bech32::hrp::BC)
                     .unwrap_or_else(|_| panic!("published address must encode")),
                 expected
             );
@@ -207,5 +292,51 @@ mod tests {
             account.next_receive_address(),
             Err(BitcoinError::InvalidIndex)
         );
+    }
+
+    #[test]
+    fn exports_bitcoin_core_watch_only_descriptors() {
+        assert_eq!(
+            descriptor_checksum("raw(deadbeef)"),
+            Ok("raw(deadbeef)#89f8spxm".to_owned())
+        );
+        assert_eq!(
+            descriptor_checksum("raw(Ü)"),
+            Err(BitcoinError::DescriptorEncoding)
+        );
+
+        let seed = OfflineSeed::from_phrase(PUBLIC_PHRASE.to_owned())
+            .unwrap_or_else(|_| panic!("public 24-word fixture must parse"));
+        let account = seed
+            .bitcoin_testnet_account()
+            .unwrap_or_else(|_| panic!("public testnet account must derive"));
+        let descriptors = account
+            .descriptors()
+            .unwrap_or_else(|_| panic!("public descriptors must encode"));
+        assert_eq!(descriptors.receive, RECEIVE_DESCRIPTOR);
+        assert_eq!(descriptors.change, CHANGE_DESCRIPTOR);
+
+        // rust-bitcoin independently confirms the origin fingerprint and account tpub.
+        let secp = Secp256k1::new();
+        let root = bitcoin_bip32::Xpriv::new_master(Network::Testnet, &seed.0[..])
+            .unwrap_or_else(|_| panic!("public fixture root must derive"));
+        let path = "m/84'/1'/0'"
+            .parse::<bitcoin_bip32::DerivationPath>()
+            .unwrap_or_else(|_| panic!("fixed account path must parse"));
+        let child = root
+            .derive_priv(&secp, &path)
+            .unwrap_or_else(|_| panic!("public fixture account must derive"));
+        let tpub = bitcoin_bip32::Xpub::from_priv(&secp, &child);
+        let fingerprint = root.fingerprint(&secp);
+
+        for (branch, actual) in [(0, descriptors.receive), (1, descriptors.change)] {
+            let body = format!("wpkh([{fingerprint}/84h/1h/0h]{tpub}/{branch}/*)");
+            assert_eq!(
+                actual,
+                descriptor_checksum(&body)
+                    .unwrap_or_else(|_| panic!("independent descriptor must encode"))
+            );
+            assert!(!actual.contains("prv"));
+        }
     }
 }
