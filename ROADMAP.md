@@ -26,12 +26,23 @@ Dates are intentionally absent. Security gates, not launch pressure, advance a p
 - [x] Offline BIP84 testnet receive-address derivation with published and independent vectors
 - [x] Public testnet receive/change branches with deterministic in-memory cursors
 - [x] Checksummed watch-only account descriptors
-- [ ] Persisted public wallet state
+- [x] Versioned public wallet-state codec with strict validation and resume tests
+- [x] Public-state privacy/storage policy and testnet4 backend/discovery decisions
+- [x] OS-backed public-state storage choices: macOS Keychain / Linux Secret Service
+- [x] Protected atomic public-state persistence and file-only rollback/interruption tests
+- [ ] Packaged-app OS-store lifecycle, disk-full, and physical power-loss validation
+- [ ] Direct Bitcoin Core descriptor/address compatibility check passes
 - [ ] Bitcoin Core-compatible testnet backend
 - [ ] Receive, coin-aware send, fee selection, and transaction review
 - [ ] Encrypted local keystore using operating-system facilities
 - [ ] Memory-zeroization tests and secret-redaction tests
 - [ ] Linux and macOS reproducible build path
+- [ ] Dependency vulnerability and license checks enforced in CI
+
+Public-state format and the pending storage/backend boundaries are documented in
+[`docs/BITCOIN_PUBLIC_STATE.md`](docs/BITCOIN_PUBLIC_STATE.md). The codec is in-memory
+only; [protected storage](docs/PUBLIC_STATE_STORAGE.md) is a separate implemented
+module, not an encrypted seed vault or network backend. UI integration remains gated.
 
 Exit gate: test vectors pass, no mainnet endpoints exist, threat-model review is
 complete, and two maintainers approve the signing path.

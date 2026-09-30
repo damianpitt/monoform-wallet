@@ -1,8 +1,12 @@
 //! Offline-only recovery-seed core. The desktop UI does not call this library yet.
 
-use bip32::{ChildNumber, KeyFingerprint, Prefix, XPrv, XPub};
+// No unsupported-platform mock fallback may hold a storage encryption key.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod storage;
+
+use bip32::{ChildNumber, ExtendedKey, KeyFingerprint, Prefix, XPrv, XPub};
 use bip39::{Language, Mnemonic};
-use bitcoin_hashes::{Hash, hash160};
+use bitcoin_hashes::{Hash, hash160, sha256};
 use unicode_normalization::UnicodeNormalization;
 use zeroize::Zeroizing;
 
@@ -18,12 +22,13 @@ pub enum SeedError {
     InvalidRecoveryPhrase,
 }
 
-/// Address failures never include a seed, key, or derivation-library payload.
+/// Bitcoin failures never include a seed, key, or underlying library payload.
 #[derive(Debug, PartialEq, Eq)]
 pub enum BitcoinError {
     InvalidIndex,
     DerivationFailed,
     DescriptorEncoding,
+    InvalidPublicState,
 }
 
 /// Public testnet account material and its next in-memory address indices.
@@ -89,6 +94,86 @@ impl BitcoinTestnetAccount {
             receive: bitcoin_descriptor(self.fingerprint, &key, 0)?,
             change: bitcoin_descriptor(self.fingerprint, &key, 1)?,
         })
+    }
+
+    /// Encode watch-only state in memory; this neither encrypts nor saves it.
+    /// Public keys expose address history: never log or publish this record.
+    pub fn encode_public_state(&self) -> String {
+        let [a, b, c, d] = self.fingerprint;
+        let key = self.account.to_extended_key(Prefix::TPUB);
+        let body = format!(
+            "monoform:1:bitcoin-testnet4:{a:02x}{b:02x}{c:02x}{d:02x}:{key}:{}:{}",
+            self.next_receive, self.next_change
+        );
+        // SHA256 detects accidental corruption, not tampering or cursor rollback.
+        format!("{body}:{}", sha256::Hash::hash(body.as_bytes()))
+    }
+
+    /// Restore only the canonical v1 testnet4 account format, without a seed.
+    /// Origin metadata cannot prove ancestry; callers must verify wallet identity.
+    pub fn from_public_state(record: &str) -> Result<Self, BitcoinError> {
+        let invalid = BitcoinError::InvalidPublicState;
+        // Bound work and ensure ASCII before parsing attacker-controlled text.
+        if record.len() > 256 || !record.is_ascii() {
+            return Err(invalid);
+        }
+        let (body, checksum) = record.rsplit_once(':').ok_or(invalid)?;
+        if checksum != sha256::Hash::hash(body.as_bytes()).to_string() {
+            return Err(BitcoinError::InvalidPublicState);
+        }
+        let fields = body.split(':').collect::<Vec<_>>();
+        let [
+            "monoform",
+            "1",
+            "bitcoin-testnet4",
+            fingerprint,
+            key,
+            receive,
+            change,
+        ] = fields.as_slice()
+        else {
+            return Err(BitcoinError::InvalidPublicState);
+        };
+        let fingerprint = u32::from_str_radix(fingerprint, 16)
+            .map_err(|_| BitcoinError::InvalidPublicState)?
+            .to_be_bytes();
+        // Reject private-key text before Base58 decoding creates a key-byte copy.
+        if !key.starts_with("tpub") {
+            return Err(BitcoinError::InvalidPublicState);
+        }
+        let key = key
+            .parse::<ExtendedKey>()
+            .map_err(|_| BitcoinError::InvalidPublicState)?;
+        // XPub conversion also accepts private keys upstream: reject them first.
+        // Depth and child number check account 0; ancestors remain unverifiable.
+        if key.prefix != Prefix::TPUB
+            || key.attrs.depth != 3
+            || key.attrs.child_number != ChildNumber(ChildNumber::HARDENED_FLAG)
+        {
+            return Err(BitcoinError::InvalidPublicState);
+        }
+        let account = XPub::try_from(key).map_err(|_| BitcoinError::InvalidPublicState)?;
+        let next_receive = receive
+            .parse::<u32>()
+            .map_err(|_| BitcoinError::InvalidPublicState)?;
+        let next_change = change
+            .parse::<u32>()
+            .map_err(|_| BitcoinError::InvalidPublicState)?;
+        // 2^31 represents an exhausted branch, never a usable hardened address.
+        if next_receive > ChildNumber::HARDENED_FLAG || next_change > ChildNumber::HARDENED_FLAG {
+            return Err(BitcoinError::InvalidPublicState);
+        }
+        let restored = Self {
+            fingerprint,
+            account,
+            next_receive,
+            next_change,
+        };
+        // One spelling per record: reject padded numbers, whitespace and extra data.
+        if restored.encode_public_state() != record {
+            return Err(BitcoinError::InvalidPublicState);
+        }
+        Ok(restored)
     }
 }
 
@@ -201,8 +286,8 @@ fn descriptor_polymod(checksum: u64, value: u64) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::{
-        BitcoinError, OfflineSeed, bitcoin_account, bitcoin_address, bitcoin_branch,
-        descriptor_checksum,
+        BitcoinError, BitcoinTestnetAccount, OfflineSeed, bitcoin_account, bitcoin_address,
+        bitcoin_branch, descriptor_checksum,
     };
     use ::bip32::ChildNumber;
     use bip39::{Language, Mnemonic};
@@ -216,6 +301,185 @@ mod tests {
     const EMPTY_SEED: &str = "408b285c123836004f4b8842c89324c1f01382450c0d439af345ba7fc49acf705489c6fc77dbd4e3dc1dd8cc6bc9f043db8ada1e243c4a0eafb290d399480840";
     const RECEIVE_DESCRIPTOR: &str = "wpkh([5436d724/84h/1h/0h]tpubDCWivZp6qaqCALCt8MyLqAb3awnWm4hfbBPjdZqirYFXYeZ5YsfbWVaPacULZTGtK1RPBSZ92UWNjnhL4fB9UVrF2FjgW8cgmBjxPBmB4iB/0/*)#hdxns7pj";
     const CHANGE_DESCRIPTOR: &str = "wpkh([5436d724/84h/1h/0h]tpubDCWivZp6qaqCALCt8MyLqAb3awnWm4hfbBPjdZqirYFXYeZ5YsfbWVaPacULZTGtK1RPBSZ92UWNjnhL4fB9UVrF2FjgW8cgmBjxPBmB4iB/1/*)#xerjdt32";
+    // SHA256 independently checked with the system's shasum, not the codec.
+    const PUBLIC_STATE: &str = "monoform:1:bitcoin-testnet4:5436d724:tpubDCWivZp6qaqCALCt8MyLqAb3awnWm4hfbBPjdZqirYFXYeZ5YsfbWVaPacULZTGtK1RPBSZ92UWNjnhL4fB9UVrF2FjgW8cgmBjxPBmB4iB:0:0:2d159afbde83ae83f819477437aabcd2299049210fda77d2d236211c5907f718";
+
+    fn public_account() -> BitcoinTestnetAccount {
+        OfflineSeed::from_phrase(PUBLIC_PHRASE.to_owned())
+            .unwrap_or_else(|_| panic!("public fixture must parse"))
+            .bitcoin_testnet_account()
+            .unwrap_or_else(|_| panic!("public fixture must derive"))
+    }
+
+    // Recompute integrity so invalid-field tests exercise validation, not checksum rejection.
+    fn sealed(body: &str) -> String {
+        use bitcoin_hashes::{Hash, sha256};
+        format!("{body}:{}", sha256::Hash::hash(body.as_bytes()))
+    }
+
+    fn assert_invalid_state(record: &str) {
+        assert!(matches!(
+            BitcoinTestnetAccount::from_public_state(record),
+            Err(BitcoinError::InvalidPublicState)
+        ));
+    }
+
+    #[test]
+    fn public_state_round_trip_resumes_both_branches_without_seed() {
+        // The helper has already dropped its seed; only public material remains.
+        let mut original = public_account();
+        assert_eq!(original.encode_public_state(), PUBLIC_STATE);
+        for _ in 0..3 {
+            assert!(original.next_receive_address().is_ok());
+        }
+        assert!(original.next_change_address().is_ok());
+        let record = original.encode_public_state();
+        let mut restored = BitcoinTestnetAccount::from_public_state(&record)
+            .unwrap_or_else(|_| panic!("public state must restore"));
+        assert_eq!(restored.encode_public_state(), record);
+        assert_eq!(
+            restored.next_receive_address(),
+            original.next_receive_address()
+        );
+        assert_eq!(
+            restored.next_change_address(),
+            original.next_change_address()
+        );
+        assert_eq!(
+            restored.descriptors().map(|d| d.receive),
+            Ok(RECEIVE_DESCRIPTOR.to_owned())
+        );
+        assert_eq!(
+            restored.descriptors().map(|d| d.change),
+            Ok(CHANGE_DESCRIPTOR.to_owned())
+        );
+    }
+
+    #[test]
+    fn public_state_rejects_corruption_truncation_and_unbounded_input() {
+        for end in 0..PUBLIC_STATE.len() {
+            assert_invalid_state(&PUBLIC_STATE[..end]);
+        }
+        for index in 0..PUBLIC_STATE.len() {
+            let mut corrupted = PUBLIC_STATE.as_bytes().to_vec();
+            corrupted[index] ^= 1;
+            let corrupted = String::from_utf8(corrupted)
+                .unwrap_or_else(|_| panic!("mutated ASCII must remain UTF-8"));
+            assert_invalid_state(&corrupted);
+        }
+        for invalid in [
+            "".to_owned(),
+            "x".repeat(257),
+            "Ü".repeat(64),
+            format!("{PUBLIC_STATE}\n"),
+        ] {
+            assert_invalid_state(&invalid);
+        }
+    }
+
+    #[test]
+    fn public_state_rejects_unknown_formats_and_noncanonical_fields() {
+        let (body, _) = PUBLIC_STATE
+            .rsplit_once(':')
+            .unwrap_or_else(|| panic!("public state must contain checksum"));
+        let fields = body.split(':').collect::<Vec<_>>();
+        for (index, invalid) in [
+            (0, "other"),
+            (1, "2"),
+            (1, "01"),
+            (2, "bitcoin-mainnet"),
+            (2, "bitcoin-testnet3"),
+            (2, "bitcoin-signet"),
+            (3, "5436D724"),
+            (3, "05436d724"),
+            (3, "5436d72"),
+            (3, "zzzzzzzz"),
+            (4, "tpub-invalid"),
+            (4, ""),
+            (5, "-1"),
+            (5, "+0"),
+            (5, "00"),
+            (5, "2147483649"),
+            (5, "4294967296"),
+            (6, "-1"),
+            (6, " 0"),
+            (6, "00"),
+            (6, "2147483649"),
+            (6, "4294967296"),
+        ] {
+            let mut modified = fields.clone();
+            modified[index] = invalid;
+            assert_invalid_state(&sealed(&modified.join(":")));
+        }
+        assert_invalid_state(&sealed(&fields[..6].join(":")));
+        assert_invalid_state(&sealed(&format!("{body}:extra")));
+    }
+
+    #[test]
+    fn public_state_rejects_private_mainnet_wrong_depth_and_invalid_curve_keys() {
+        use bip32::{Prefix, XPrv};
+        let original = public_account();
+        let seed = OfflineSeed::from_phrase(PUBLIC_PHRASE.to_owned())
+            .unwrap_or_else(|_| panic!("public fixture must parse"));
+        let root = XPrv::new(&seed.0[..]).unwrap_or_else(|_| panic!("public root must derive"));
+        let hardened = ChildNumber::HARDENED_FLAG;
+        let private_account = [84 | hardened, 1 | hardened, hardened]
+            .into_iter()
+            .try_fold(root, |key, child| key.derive_child(ChildNumber(child)))
+            .unwrap_or_else(|_| panic!("public fixture account must derive"));
+        let (body, _) = PUBLIC_STATE
+            .rsplit_once(':')
+            .unwrap_or_else(|| panic!("public state must contain checksum"));
+        let fields = body.split(':').collect::<Vec<_>>();
+        let valid = original.account.to_extended_key(Prefix::TPUB);
+        let mut wrong_depth = valid.clone();
+        wrong_depth.attrs.depth = 2;
+        let mut wrong_account = valid.clone();
+        wrong_account.attrs.child_number = ChildNumber(ChildNumber::HARDENED_FLAG | 1);
+        let mut nonhardened_account = valid.clone();
+        nonhardened_account.attrs.child_number = ChildNumber(0);
+        let mut invalid_point = valid;
+        invalid_point.key_bytes = [0xff; 33];
+        invalid_point.key_bytes[0] = 2;
+        // Valid Base58 checksums must not disguise private material or invalid origins.
+        for key in [
+            private_account.to_extended_key(Prefix::TPRV),
+            private_account.to_extended_key(Prefix::XPRV),
+            original.account.to_extended_key(Prefix::XPUB),
+            wrong_depth,
+            wrong_account,
+            nonhardened_account,
+            invalid_point,
+        ] {
+            let text = key.to_string();
+            let mut modified = fields.clone();
+            modified[4] = &text;
+            assert_invalid_state(&sealed(&modified.join(":")));
+        }
+    }
+
+    #[test]
+    fn public_state_preserves_exhaustion_without_advancing_failed_cursors() {
+        let mut account = public_account();
+        account.next_receive = ChildNumber::HARDENED_FLAG - 1;
+        account.next_change = ChildNumber::HARDENED_FLAG - 1;
+        let mut restored = BitcoinTestnetAccount::from_public_state(&account.encode_public_state())
+            .unwrap_or_else(|_| panic!("last valid indices must restore"));
+        assert!(restored.next_receive_address().is_ok());
+        assert!(restored.next_change_address().is_ok());
+        let exhausted = restored.encode_public_state();
+        let mut restored = BitcoinTestnetAccount::from_public_state(&exhausted)
+            .unwrap_or_else(|_| panic!("exhausted branches must restore"));
+        assert_eq!(
+            restored.next_receive_address(),
+            Err(BitcoinError::InvalidIndex)
+        );
+        assert_eq!(
+            restored.next_change_address(),
+            Err(BitcoinError::InvalidIndex)
+        );
+        assert_eq!(restored.encode_public_state(), exhausted);
+    }
 
     #[test]
     fn derives_locked_empty_passphrase_seed() {

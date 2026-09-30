@@ -28,6 +28,8 @@ outside the software wallet's ability to defeat and must be stated plainly.
 | Malicious update | Opt-in signed updates, threshold release process, rollback protection |
 | Local vault theft | OS-backed encryption key, memory-hard user unlock KDF where applicable, rate limiting, no plaintext backups |
 | Privacy leakage | No analytics, self-hosted node option, documented query leakage, proxy support evaluated per chain |
+| Public-state exposure or replacement | Account keys/descriptors are privacy-sensitive; OS-backed authenticated encryption and private file permissions; full account-key verification against the future signing vault still required |
+| Cursor rollback or interrupted writes | Exclusive process lock, staged atomic writes and OS commit markers before returning addresses; file-only rollback detected, coordinated file/OS-marker rollback is not |
 | UI spoofing | Platform-native secret prompts, consistent signing ceremony, no arbitrary HTML or remote content |
 | Maintainer compromise | Two-person release approval, least-privilege GitHub roles, protected branches, hardware security keys |
 | Wrong-network transfer | Network shown throughout review; exact chain identity validated before signing |
@@ -65,6 +67,16 @@ hardware wallet and is not hardware-protected.
 - Cloud synchronization or remote seed backup
 - Unreviewed tokens, plugins, or runtime-loaded chain adapters
 - Token approvals, permits, arbitrary contract calls, and bridge transactions
+
+## Public storage boundary
+
+The new storage module persists public testnet4 state only. Native credentials and
+same-user OS access remain trusted; it provides neither Secure Enclave isolation nor
+a hardware monotonic counter. Missing/locked credentials fail closed. Flush requests
+and OS read-back do not certify power-loss durability. Migration and restoring both
+an old state file and its OS marker need a separate recovery design. See
+[Storage protocol and release gates](PUBLIC_STATE_STORAGE.md). Seed storage and UI
+integration remain disabled.
 
 ## Review cadence
 

@@ -10,7 +10,10 @@ permissions:
 
 jobs:
   rust:
-    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: dtolnay/rust-toolchain@d1031067263f94b142dd6c0ce24c5eb9d02d52a0
@@ -18,8 +21,21 @@ jobs:
           toolchain: 1.98.1
           components: clippy,rustfmt
       - name: Install Linux build dependencies
-        run: sudo apt-get update && sudo apt-get install --yes libxkbcommon-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install --yes libxkbcommon-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libdbus-1-dev pkg-config dbus-x11 gnome-keyring
       - run: cargo fmt --all --check
       - run: cargo check --locked
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
+      - name: Test optional Core checker without a node
+        run: python3 -B -m unittest discover -s scripts -p '*_test.py'
+      - name: Native macOS Keychain smoke test (public fixture only)
+        if: runner.os == 'macOS'
+        run: cargo test --locked --lib storage::tests::native_store_round_trip -- --ignored --exact
+      - name: Native Linux Secret Service smoke test (isolated CI session)
+        if: runner.os == 'Linux'
+        run: |
+          dbus-run-session -- sh -eu -c '
+            printf "%s" "monoform-ci-public-fixture" | gnome-keyring-daemon --unlock --components=secrets
+            cargo test --locked --lib storage::tests::native_store_round_trip -- --ignored --exact
+          '

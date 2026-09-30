@@ -75,6 +75,17 @@ An offline-only BIP39 seed core exists, but there is no seed-entry UI or wallet-
 path. It must not be used with real funds before vault, derivation, and independent
 review gates pass.
 
+The offline Bitcoin core can export watch-only descriptors and encode/restore versioned
+testnet4 public account state with receive/change counters. A separate offline module
+persists only this public state using macOS Keychain or Linux Secret Service-backed
+encryption and atomic address reservation. It is not wired into the UI and does not
+store seeds or private keys. See [Public-state codec](docs/BITCOIN_PUBLIC_STATE.md) and
+[Storage policy, protocol, and limits](docs/PUBLIC_STATE_STORAGE.md).
+
+Linux builds also require the D-Bus development library (`libdbus-1-dev` on Debian/
+Ubuntu). Storage needs an existing persistent Secret Service provider in the user's
+desktop session; there is no plaintext fallback when it is unavailable.
+
 ## View the original interface study
 
 Open `prototype/index.html` locally. It is dependency-free and uses fixed demo data.

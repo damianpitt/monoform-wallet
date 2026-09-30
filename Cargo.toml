@@ -13,6 +13,9 @@ bip39 = { version = "=2.2.2", default-features = false, features = ["alloc", "ze
 bip32 = { version = "=0.5.3", default-features = false, features = ["secp256k1"] }
 bitcoin_hashes = { version = "=0.14.101", default-features = false }
 bech32 = { version = "=0.11.1", default-features = false, features = ["alloc"] }
+chacha20poly1305 = { version = "=0.10.1", default-features = false, features = ["alloc"] }
+getrandom = { version = "=0.4.3", default-features = false }
+rustix = { version = "=1.1.4", default-features = false, features = ["std", "fs", "process"] }
 eframe = { version = "=0.36.1", default-features = false, features = [
     "accesskit",
     "default_fonts",
@@ -25,6 +28,13 @@ zeroize = { version = "=1.9.0", default-features = false, features = ["alloc"] }
 
 [dev-dependencies]
 bitcoin = { version = "=0.32.102", default-features = false, features = ["std"] }
+tempfile = { version = "=3.27.0", default-features = false }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "=3.6.3", default-features = false, features = ["apple-native"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "=3.6.3", default-features = false, features = ["sync-secret-service", "crypto-rust"] }
 
 [profile.release]
 codegen-units = 1

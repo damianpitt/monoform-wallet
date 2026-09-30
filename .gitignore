@@ -16,6 +16,10 @@ target/
 *.key
 *.keystore
 wallet.dat
+public-state.mfs
+public-state.pending
+public-state.lock
+__pycache__/
 
 # Local source note retained outside the public repository.
 Sovereign Wallet.rtf

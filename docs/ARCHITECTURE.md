@@ -55,6 +55,18 @@ limits, timeouts, TLS, and chain-specific consistency checks. A backend can obse
 requests, lie about balances or fees, omit transactions, or attempt denial of service;
 it can never receive a private key or seed.
 
+### Bitcoin public state
+
+The offline core has a strict version-1 testnet4 codec for the public account key,
+origin fingerprint, and receive/change counters. It uses existing dependencies and
+never serializes seed material. Its checksum detects corruption, not malicious
+replacement or rollback. Public state reveals address history and requires
+OS-protected storage before UI use. A separate `storage::PublicStateStore` now implements
+Keychain/Secret Service-backed encryption, locked atomic persistence, and address
+reservation with file-only rollback detection. The encrypted seed vault, local Bitcoin
+Core backend, and wallet UI integration remain unimplemented. See the
+[codec](BITCOIN_PUBLIC_STATE.md) and [storage protocol](PUBLIC_STATE_STORAGE.md).
+
 ### EVM networks and assets
 
 Ethereum and a future ZK rollup reuse address, signing, transaction-envelope, and

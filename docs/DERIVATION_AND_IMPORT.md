@@ -40,13 +40,19 @@ advances separate in-memory cursors for `m/84'/1'/0'/0/index` and
 `m/84'/1'/0'/1/index`. Its addresses begin with `tb1`. This does not change the locked
 mainnet recovery path above. There are checksummed BIP380 watch-only descriptors for
 both branches. They contain the root fingerprint, fixed account origin, account `tpub`,
-and branch wildcard, but no private key. There is no descriptor persistence, network
-connection, signing, storage, or user-facing phrase import yet.
+and branch wildcard, but no private key. A versioned in-memory public-state codec
+restores the account and both counters without the seed; version 1 explicitly selects
+testnet4. Public account keys and descriptors are privacy-sensitive, not safe to log.
+Separate OS-protected public-state persistence now exists; it does not store the seed.
+There is no network connection, signing, or user-facing phrase import yet. See
+[Public-state format and boundaries](BITCOIN_PUBLIC_STATE.md) and
+[Protected storage](PUBLIC_STATE_STORAGE.md).
 
-Import performs deterministic address discovery from index zero. The gap limit and
-backend strategy must be fixed before testnet import is enabled. Recovery in another
+Import will use a user-operated local Bitcoin Core testnet4 node and scan both branches
+from index zero with a gap of 20 beyond the last used and known issued addresses.
+These are documented decisions, not an implemented discovery engine. Recovery in another
 BIP39/BIP84 wallet requires the same phrase, account path, and discovery of both
-branches. Monoform will document the final gap limit beside its test vectors.
+branches; seed-only recovery can miss funds beyond its discovery gap.
 
 The initial format does not scan legacy BIP44, nested SegWit BIP49, or Taproot BIP86
 accounts. Funds held on those paths are not Monoform funds and will not appear.
