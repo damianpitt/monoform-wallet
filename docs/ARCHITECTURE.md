@@ -51,7 +51,9 @@ primitives are not forced into a misleading common type.
 ### Network client
 
 All remote responses are hostile input. Network clients use fixed schemas, response
-limits, timeouts, TLS, and chain-specific consistency checks. A backend can observe
+limits, timeouts, TLS for remote transports, and chain-specific consistency checks.
+The initial Core client uses cookie-authenticated HTTP only on fixed IPv4 loopback,
+with proxies and redirects disabled. A backend can observe
 requests, lie about balances or fees, omit transactions, or attempt denial of service;
 it can never receive a private key or seed.
 
@@ -63,8 +65,12 @@ never serializes seed material. Its checksum detects corruption, not malicious
 replacement or rollback. Public state reveals address history and requires
 OS-protected storage before UI use. A separate `storage::PublicStateStore` now implements
 Keychain/Secret Service-backed encryption, locked atomic persistence, and address
-reservation with file-only rollback detection. The encrypted seed vault, local Bitcoin
-Core backend, and wallet UI integration remain unimplemented. See the
+reservation with file-only rollback detection. The separate opt-in local Bitcoin
+Core client now checks testnet4 identity/status and public descriptor compatibility,
+and offers bounded [confirmed-history discovery](BITCOIN_DISCOVERY.md) anchored to
+one tip with saved-counter and reorg rules. Balances, transaction history, applying
+discovery recommendations, the encrypted seed vault and wallet UI integration remain
+unimplemented. See the [backend boundary](BITCOIN_CORE_BACKEND.md),
 [codec](BITCOIN_PUBLIC_STATE.md) and [storage protocol](PUBLIC_STATE_STORAGE.md).
 
 ### EVM networks and assets

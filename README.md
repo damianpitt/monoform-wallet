@@ -82,6 +82,14 @@ encryption and atomic address reservation. It is not wired into the UI and does 
 store seeds or private keys. See [Public-state codec](docs/BITCOIN_PUBLIC_STATE.md) and
 [Storage policy, protocol, and limits](docs/PUBLIC_STATE_STORAGE.md).
 
+An opt-in read-only [Bitcoin Core client](docs/BITCOIN_CORE_BACKEND.md) verifies
+local testnet4 identity, reports node sync/tip status and checks public descriptors
+without creating or importing a Core wallet. Both branches' first two addresses
+match Core 31.1. Separate bounded [confirmed-history discovery](docs/BITCOIN_DISCOVERY.md)
+checks both branches, respects saved counters and rejects incomplete scans/reorgs.
+No balance accounting or UI networking is enabled; the default build stays offline.
+Networking requires the explicit `core-rpc` feature.
+
 Linux builds also require the D-Bus development library (`libdbus-1-dev` on Debian/
 Ubuntu). Storage needs an existing persistent Secret Service provider in the user's
 desktop session; there is no plaintext fallback when it is unavailable.

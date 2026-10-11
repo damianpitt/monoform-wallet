@@ -78,6 +78,21 @@ an old state file and its OS marker need a separate recovery design. See
 [Storage protocol and release gates](PUBLIC_STATE_STORAGE.md). Seed storage and UI
 integration remain disabled.
 
+## Local read-only Core boundary
+
+The opt-in backend accepts only fixed loopback testnet4 RPC with local cookie
+authentication. It bounds headers/bodies/time, disables proxies/redirects and library
+logging, checks chain name/genesis, and exposes no wallet/chain mutation RPC method. Cookie
+authentication does not constrain Core's own broad RPC authority; same-user/OS
+compromise remains outside this boundary. Node status and descriptor checks are
+not independent consensus verification or complete history/balance observations.
+Bounded confirmed-history discovery checks scripts, honors saved cursors and
+rejects incomplete scans or detected reorgs without returning partial recommendations.
+Core filter scans use its shared transient scan slot and can outlive a client timeout;
+the client neither aborts another scan nor claims atomic snapshot/consensus protection.
+UI integration, balances, scan-result persistence and signing remain disabled. See
+[Core backend limits and tests](BITCOIN_CORE_BACKEND.md).
+
 ## Review cadence
 
 Update this model with every signing feature, platform, network, update mechanism,

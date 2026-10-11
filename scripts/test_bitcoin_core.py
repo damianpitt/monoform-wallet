@@ -1,0 +1,71 @@
+"""Isolated developer/CI check: explicit verified Core bin directory, public fixture only."""
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+
+def run(bin_dir):
+    if not bin_dir.is_absolute():
+        raise ValueError("expected absolute verified Core bin directory")
+    cargo = shutil.which("cargo")
+    if cargo is None:
+        raise ValueError("cargo unavailable")
+    # Build first, so node lifetime stays short. Default fixture stays offline.
+    subprocess.run([cargo, "build", "--locked", "--example", "bitcoin_core_fixture"], check=True, timeout=600)
+    subprocess.run([cargo, "test", "--locked", "--features", "core-rpc",
+                    "--test", "bitcoin_core_live", "--no-run"], check=True, timeout=600)
+    subprocess.run([cargo, "test", "--locked", "--features", "core-rpc", "--lib",
+                    "--no-run"], check=True, timeout=600)
+    with tempfile.TemporaryDirectory(prefix="monoform-core-") as temporary:
+        datadir = str(Path(temporary).resolve())
+        # Own the child PID: never send a stop request to a possibly unrelated node.
+        node = subprocess.Popen([
+            str(bin_dir / "bitcoind"), "-testnet4", "-conf=/dev/null", f"-datadir={datadir}",
+            "-server=1", "-disablewallet=1", "-blockfilterindex=1", "-networkactive=0", "-listen=0",
+            "-dnsseed=0", "-discover=0", "-rpcbind=127.0.0.1", "-rpcallowip=127.0.0.1",
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            # Do not authenticate to another node if this child's port bind fails.
+            cookie = Path(datadir) / "testnet4/.cookie"
+            deadline = time.monotonic() + 20
+            while not cookie.exists():
+                if node.poll() is not None or time.monotonic() >= deadline:
+                    raise ValueError("isolated Core did not start")
+                time.sleep(0.1)
+            environment = dict(os.environ, MONOFORM_TEST_CORE_DIR=datadir,
+                               PATH=str(bin_dir) + os.pathsep + os.environ.get("PATH", ""))
+            cli = [str(bin_dir / "bitcoin-cli"), "-testnet4", "-conf=/dev/null",
+                   f"-datadir={datadir}", "-rpcconnect=127.0.0.1", "-rpcwait",
+                   "-rpcwaittimeout=15", "-rpcclienttimeout=10", "getblockchaininfo"]
+            subprocess.run(cli, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=20)
+            if node.poll() is not None:
+                raise ValueError("isolated Core exited")
+            fixture = subprocess.run([cargo, "run", "--locked", "--quiet", "--example", "bitcoin_core_fixture"],
+                                     check=True, capture_output=True, timeout=60)
+            subprocess.run([sys.executable, "-B", "scripts/check_bitcoin_core.py", datadir],
+                           input=fixture.stdout, check=True, env=environment, timeout=60)
+            subprocess.run([cargo, "test", "--locked", "--features", "core-rpc", "--test",
+                            "bitcoin_core_live", "--", "--ignored"], check=True, env=environment, timeout=90)
+            subprocess.run([cargo, "test", "--locked", "--features", "core-rpc", "--lib",
+                            "core_rpc::discovery::tests::core_genesis_filter_scan_and_activity_schema_match",
+                            "--", "--ignored", "--exact"], check=True, env=environment, timeout=90)
+        finally:
+            node.terminate()
+            try:
+                node.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                node.kill()
+                node.wait(timeout=5)
+
+
+if __name__ == "__main__":
+    try:
+        if len(sys.argv) != 2:
+            raise ValueError("expected absolute verified Core bin directory")
+        run(Path(sys.argv[1]))
+    except (OSError, ValueError, subprocess.SubprocessError):
+        sys.exit("Isolated Core compatibility test failed; no user wallet was modified.")

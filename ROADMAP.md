@@ -31,8 +31,11 @@ Dates are intentionally absent. Security gates, not launch pressure, advance a p
 - [x] OS-backed public-state storage choices: macOS Keychain / Linux Secret Service
 - [x] Protected atomic public-state persistence and file-only rollback/interruption tests
 - [ ] Packaged-app OS-store lifecycle, disk-full, and physical power-loss validation
-- [ ] Direct Bitcoin Core descriptor/address compatibility check passes
-- [ ] Bitcoin Core-compatible testnet backend
+- [x] Direct Bitcoin Core 31.1 descriptor/address compatibility check passes
+- [x] Opt-in, read-only loopback testnet4 Core connection/status and descriptor verification
+- [x] Bounded confirmed-history receive/change discovery, saved-counter policy and reorg rejection
+- [ ] Anchored UTXO/balance observations, transaction history and mempool reconciliation
+- [ ] Protected atomic application of discovery recommendations and UI integration
 - [ ] Receive, coin-aware send, fee selection, and transaction review
 - [ ] Encrypted local keystore using operating-system facilities
 - [ ] Memory-zeroization tests and secret-redaction tests
@@ -43,6 +46,11 @@ Public-state format and the pending storage/backend boundaries are documented in
 [`docs/BITCOIN_PUBLIC_STATE.md`](docs/BITCOIN_PUBLIC_STATE.md). The codec is in-memory
 only; [protected storage](docs/PUBLIC_STATE_STORAGE.md) is a separate implemented
 module, not an encrypted seed vault or network backend. UI integration remains gated.
+
+The separate opt-in [Core backend](docs/BITCOIN_CORE_BACKEND.md) now verifies chain
+identity and descriptor compatibility, with separate bounded
+[confirmed-history discovery](docs/BITCOIN_DISCOVERY.md). It is not a complete balance/history backend;
+the default build and UI still make no network calls.
 
 Exit gate: test vectors pass, no mainnet endpoints exist, threat-model review is
 complete, and two maintainers approve the signing path.

@@ -9,7 +9,7 @@ data, contacts a node, or enables signing. The desktop UI still uses demonstrati
 
 Version 1 selects **Bitcoin testnet4**, BIP84 account `m/84'/1'/0'`, receiving branch
 `0`, and change branch `1`. The old offline address fixtures remain unchanged. A `tb1`
-address or `tpub` alone cannot identify the testnet variant; the future backend must
+address or `tpub` alone cannot identify the testnet variant; the backend must
 verify its actual chain against this record before using any response.
 
 ## Record format
@@ -71,7 +71,7 @@ connected to storage; the in-memory address API is still not a durable reservati
 See [OS-backed public-state storage](PUBLIC_STATE_STORAGE.md) for the complete format,
 protocol, tests, threat limits, and platform/release gates.
 
-## Backend and discovery decision — implementation deferred
+## Backend and discovery decision — bounded confirmed-history discovery implemented
 
 Start with a user-operated Bitcoin Core node on testnet4, loopback-only RPC and local
 cookie authentication; no hosted default endpoint and no seed/private-key RPC payloads.
@@ -79,6 +79,13 @@ Reject another chain before accepting wallet data. Production requests need boun
 schemas, timeouts, response limits, and explicit unavailable/stale/incomplete states.
 Adding a dedicated watch-only Core wallet or importing descriptors is a separate,
 user-approved operation, never a side effect of a compatibility check.
+
+The opt-in [`core_rpc::CoreTestnet4` client](BITCOIN_CORE_BACKEND.md) now checks the
+chain name and genesis, reports bounded typed node status, and verifies public
+descriptors/addresses over cookie-authenticated loopback HTTP. It does not perform
+balance accounting or connect the UI. Separate bounded
+[confirmed-history discovery](BITCOIN_DISCOVERY.md) scans both branches, keeps saved
+cursors untouched and returns explicit incomplete/reorg errors. Default builds remain offline.
 
 Discovery starts at index zero for both account-0 branches. Require 20 consecutive
 addresses with no transaction history beyond both the last used address and the
@@ -91,10 +98,10 @@ failure, or missing/pruned history prevents completion. Seed-only recovery can m
 funds beyond the gap; the eventual UI must explain this and offer a reviewed extended
 scan. Address issuance must warn before exceeding recoverable unused-address gaps.
 
-Before backend integration, verify the public descriptors directly with Core's
-[`getdescriptorinfo`](https://bitcoincore.org/en/doc/30.0.0/rpc/util/getdescriptorinfo/)
-and compare both branches' addresses with
-[`deriveaddresses`](https://bitcoincore.org/en/doc/30.0.0/rpc/util/deriveaddresses/).
+The public descriptors were verified directly with Core 31.1 on 2026-10-07 using
+[`getdescriptorinfo`](https://bitcoincore.org/en/doc/31.0.0/rpc/util/getdescriptorinfo/),
+and both branches' addresses were compared with
+[`deriveaddresses`](https://bitcoincore.org/en/doc/31.0.0/rpc/util/deriveaddresses/).
 The optional checker below does not import a descriptor, create a wallet, or send funds:
 
 ```sh
@@ -105,7 +112,9 @@ Requires a running local testnet4 Core node and `bitcoin-cli` on PATH. Only the
 published fixture is sent; never modify this tool to accept real wallet material.
 The checker ignores `bitcoin.conf`, uses the default testnet4 RPC port and local
 cookie, and fails if the node is unavailable or reports a different chain. This is
-an opt-in developer check, not production networking or a default CI dependency.
+an opt-in developer check, not production networking. The isolated CI harness is
+configured to run it against a checksum-pinned Core release with wallets and peers disabled;
+see [the verification record](BITCOIN_CORE_BACKEND.md).
 
 ## Next gates
 

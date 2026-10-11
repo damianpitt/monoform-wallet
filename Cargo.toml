@@ -8,7 +8,17 @@ description = "A minimal, auditable self-custody wallet interface"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/damianpitt/monoform-wallet"
 
+[features]
+# Networking remains an explicit developer opt-in, never enabled by the demo UI.
+core-rpc = ["dep:ureq", "dep:serde", "dep:serde_json", "dep:base64", "dep:log"]
+
 [dependencies]
+ureq = { version = "=3.4.2", default-features = false, optional = true }
+serde = { version = "=1.0.229", default-features = false, features = ["derive", "std"], optional = true }
+serde_json = { version = "=1.0.151", default-features = false, features = ["std"], optional = true }
+base64 = { version = "=0.23.1", default-features = false, features = ["alloc"], optional = true }
+# ureq-proto TRACE dumps raw HTTP bytes, even for sensitive-marked headers.
+log = { version = "=0.4.34", default-features = false, features = ["max_level_off"], optional = true }
 bip39 = { version = "=2.2.2", default-features = false, features = ["alloc", "zeroize"] }
 bip32 = { version = "=0.5.3", default-features = false, features = ["secp256k1"] }
 bitcoin_hashes = { version = "=0.14.101", default-features = false }
@@ -29,6 +39,10 @@ zeroize = { version = "=1.9.0", default-features = false, features = ["alloc"] }
 [dev-dependencies]
 bitcoin = { version = "=0.32.102", default-features = false, features = ["std"] }
 tempfile = { version = "=3.27.0", default-features = false }
+
+[[example]]
+name = "bitcoin_core_status"
+required-features = ["core-rpc"]
 
 [target.'cfg(target_os = "macos")'.dependencies]
 keyring = { version = "=3.6.3", default-features = false, features = ["apple-native"] }

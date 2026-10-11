@@ -25,8 +25,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes libxkbcommon-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libdbus-1-dev pkg-config dbus-x11 gnome-keyring
       - run: cargo fmt --all --check
       - run: cargo check --locked
-      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo clippy --locked --all-targets --all-features -- -D warnings
       - run: cargo test --locked
+      - run: cargo test --locked --all-features
       - name: Test optional Core checker without a node
         run: python3 -B -m unittest discover -s scripts -p '*_test.py'
       - name: Native macOS Keychain smoke test (public fixture only)
@@ -39,3 +40,11 @@ jobs:
             printf "%s" "monoform-ci-public-fixture" | gnome-keyring-daemon --unlock --components=secrets
             cargo test --locked --lib storage::tests::native_store_round_trip -- --ignored --exact
           '
+      - name: Bitcoin Core 31.1 compatibility (isolated, no wallets or peers)
+        if: runner.os == 'Linux'
+        run: |
+          core_tools=$(mktemp -d)
+          curl --fail --silent --show-error --location --max-time 180 --output "$core_tools/core.tar.gz" https://bitcoincore.org/bin/bitcoin-core-31.1/bitcoin-31.1-x86_64-linux-gnu.tar.gz
+          printf 'b80d9c3e04da78fb6f0569685673418cf686fadba9042d926d13fb87ff503f9e  %s/core.tar.gz\n' "$core_tools" | sha256sum --check
+          tar -xzf "$core_tools/core.tar.gz" -C "$core_tools"
+          python3 -B scripts/test_bitcoin_core.py "$core_tools/bitcoin-31.1/bin"

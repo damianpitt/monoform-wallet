@@ -1,4 +1,8 @@
-//! Offline-only recovery-seed core. The desktop UI does not call this library yet.
+//! Offline recovery-seed core; local read-only networking requires `core-rpc`.
+//! The desktop UI does not call this library yet.
+
+#[cfg(all(feature = "core-rpc", any(target_os = "macos", target_os = "linux")))]
+pub mod core_rpc;
 
 // No unsupported-platform mock fallback may hold a storage encryption key.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
