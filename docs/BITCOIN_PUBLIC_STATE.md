@@ -82,10 +82,14 @@ user-approved operation, never a side effect of a compatibility check.
 
 The opt-in [`core_rpc::CoreTestnet4` client](BITCOIN_CORE_BACKEND.md) now checks the
 chain name and genesis, reports bounded typed node status, and verifies public
-descriptors/addresses over cookie-authenticated loopback HTTP. It does not perform
-balance accounting or connect the UI. Separate bounded
+descriptors/addresses over cookie-authenticated loopback HTTP. It remains
+disconnected from the UI. Separate bounded
 [confirmed-history discovery](BITCOIN_DISCOVERY.md) scans both branches, keeps saved
 cursors untouched and returns explicit incomplete/reorg errors. Default builds remain offline.
+
+Separate [scoped UTXO observation](BITCOIN_UTXOS.md) now returns checked confirmed
+outputs and exact satoshi sums. It does not issue addresses, save results or imply
+complete history, pending-spend reconciliation or spendability.
 
 Discovery starts at index zero for both account-0 branches. Require 20 consecutive
 addresses with no transaction history beyond both the last used address and the

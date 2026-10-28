@@ -34,7 +34,8 @@ Dates are intentionally absent. Security gates, not launch pressure, advance a p
 - [x] Direct Bitcoin Core 31.1 descriptor/address compatibility check passes
 - [x] Opt-in, read-only loopback testnet4 Core connection/status and descriptor verification
 - [x] Bounded confirmed-history receive/change discovery, saved-counter policy and reorg rejection
-- [ ] Anchored UTXO/balance observations, transaction history and mempool reconciliation
+- [x] Anchored scoped read-only UTXO observations and exact integer-satoshi confirmed balances
+- [ ] Bounded mempool reconciliation, pending spends/receipts and transaction history
 - [ ] Protected atomic application of discovery recommendations and UI integration
 - [ ] Receive, coin-aware send, fee selection, and transaction review
 - [ ] Encrypted local keystore using operating-system facilities
@@ -49,7 +50,8 @@ module, not an encrypted seed vault or network backend. UI integration remains g
 
 The separate opt-in [Core backend](docs/BITCOIN_CORE_BACKEND.md) now verifies chain
 identity and descriptor compatibility, with separate bounded
-[confirmed-history discovery](docs/BITCOIN_DISCOVERY.md). It is not a complete balance/history backend;
+[confirmed-history discovery](docs/BITCOIN_DISCOVERY.md) and
+[scoped confirmed UTXO balances](docs/BITCOIN_UTXOS.md). It is not a complete wallet/history backend;
 the default build and UI still make no network calls.
 
 Exit gate: test vectors pass, no mainnet endpoints exist, threat-model review is

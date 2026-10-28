@@ -130,6 +130,8 @@ upgraded; the lockfile remains 459 packages. Including the previously uncommitte
 Core backend, this checkpoint adds 664 production Rust lines relative to `a1f1905`
 and retains its nine-package optional dependency growth (450 to 459).
 
-Next: anchored read-only UTXO observations and integer-satoshi balance accounting,
-without treating those balances as evidence of complete address history. Persistence
-of discovery recommendations, mempool reconciliation and UI integration remain gated.
+Separate [anchored UTXO observations and exact satoshi balances](BITCOIN_UTXOS.md)
+are now implemented without treating those balances as evidence of complete history.
+Discovery and observation reuse one bounded RPC helper; discovery's error mapping,
+pruned-history policy and stopping rules remain unchanged. Persistence of discovery
+recommendations, mempool reconciliation and UI integration remain gated.

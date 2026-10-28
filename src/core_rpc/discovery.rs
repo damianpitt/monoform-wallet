@@ -9,7 +9,6 @@ use std::{
 
 const GAP: u32 = 20;
 const BLOCK_CHUNK: u32 = 4096;
-const DEADLINE: Duration = Duration::from_secs(60);
 
 /// Explicit work limits; defaults are conservative, never an unlimited recovery scan.
 pub struct DiscoveryLimits {
@@ -48,6 +47,19 @@ pub enum DiscoveryError {
     Incomplete(IncompleteReason),
     Reorg,
     Backend(CoreError),
+}
+
+// Shared transport failures acquire history-specific meaning only at this boundary.
+impl From<CoreError> for DiscoveryError {
+    fn from(error: CoreError) -> Self {
+        match error {
+            CoreError::Rpc => incomplete(IncompleteReason::HistoryUnavailable),
+            CoreError::ChainChanged => Self::Reorg,
+            CoreError::RequestLimit => incomplete(IncompleteReason::RequestLimit),
+            CoreError::Deadline => incomplete(IncompleteReason::Deadline),
+            _ => Self::Backend(error),
+        }
+    }
 }
 
 pub struct BranchDiscovery {
@@ -139,48 +151,7 @@ fn ready(status: &NodeStatus) -> Result<(), DiscoveryError> {
     }
 }
 
-struct Budget<'a> {
-    core: &'a CoreTestnet4,
-    remaining: u32,
-    started: Instant,
-}
-
 impl Budget<'_> {
-    fn call<T: DeserializeOwned>(
-        &mut self,
-        method: &'static str,
-        params: serde_json::Value,
-    ) -> Result<T, DiscoveryError> {
-        let left = DEADLINE
-            .checked_sub(self.started.elapsed())
-            .filter(|left| !left.is_zero())
-            .ok_or(incomplete(IncompleteReason::Deadline))?;
-        if self.remaining == 0 {
-            return Err(incomplete(IncompleteReason::RequestLimit));
-        }
-        self.remaining -= 1;
-        let result = self.core.rpc_timeout(method, params, left.min(TIMEOUT));
-        if self.started.elapsed() >= DEADLINE {
-            return Err(incomplete(IncompleteReason::Deadline));
-        }
-        result.map_err(|error| match error {
-            // Missing filter/undo data, unsupported Core or a busy/aborted scan cannot
-            // establish unused addresses. Never fall back to a UTXO-only scan.
-            CoreError::Rpc => incomplete(IncompleteReason::HistoryUnavailable),
-            CoreError::ChainChanged => DiscoveryError::Reorg,
-            _ => DiscoveryError::Backend(error),
-        })
-    }
-
-    fn status(&mut self) -> Result<NodeStatus, DiscoveryError> {
-        let info: ChainInfo = self.call("getblockchaininfo", json!([]))?;
-        if info.chain != "testnet4" {
-            return Err(DiscoveryError::Backend(CoreError::WrongChain));
-        }
-        let genesis = self.call("getblockhash", json!([0]))?;
-        CoreTestnet4::checked_status(info, genesis).map_err(DiscoveryError::Backend)
-    }
-
     fn branch(
         &mut self,
         account: &BitcoinTestnetAccount,
@@ -262,7 +233,7 @@ impl Budget<'_> {
     }
 }
 
-fn scripts(
+pub(super) fn scripts(
     account: &BitcoinTestnetAccount,
     branch: u32,
     from: u32,

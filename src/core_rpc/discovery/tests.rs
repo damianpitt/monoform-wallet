@@ -275,7 +275,7 @@ fn request_and_deadline_budgets_fail_closed() {
     };
     assert!(matches!(
         budget.call::<String>("getblockhash", json!([0])),
-        Err(DiscoveryError::Incomplete(IncompleteReason::Deadline))
+        Err(CoreError::Deadline)
     ));
     assert_eq!(budget.remaining, 2);
     assert!(calls(server).is_empty());

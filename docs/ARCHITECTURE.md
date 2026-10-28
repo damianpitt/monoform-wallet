@@ -68,7 +68,10 @@ Keychain/Secret Service-backed encryption, locked atomic persistence, and addres
 reservation with file-only rollback detection. The separate opt-in local Bitcoin
 Core client now checks testnet4 identity/status and public descriptor compatibility,
 and offers bounded [confirmed-history discovery](BITCOIN_DISCOVERY.md) anchored to
-one tip with saved-counter and reorg rules. Balances, transaction history, applying
+one tip with saved-counter and reorg rules. Separate
+[scoped UTXO observation](BITCOIN_UTXOS.md) associates outputs with local scripts,
+checks anchors and sums exact satoshis without floating-point conversion. Both
+operations share one bounded RPC helper. Mempool/spendable balances, transaction history, applying
 discovery recommendations, the encrypted seed vault and wallet UI integration remain
 unimplemented. See the [backend boundary](BITCOIN_CORE_BACKEND.md),
 [codec](BITCOIN_PUBLIC_STATE.md) and [storage protocol](PUBLIC_STATE_STORAGE.md).

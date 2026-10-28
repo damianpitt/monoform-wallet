@@ -89,7 +89,18 @@ pub(super) fn mock(
     client.endpoint = format!("http://{address}/");
     let handle = thread::spawn(move || {
         replies.into_iter().map(|(code, body)| {
-            let (mut stream, _) = listener.accept().unwrap_or_else(|_| panic!("test accept"));
+            // A failed assertion must not leave a mock waiting forever for another RPC.
+            listener.set_nonblocking(true).unwrap_or_else(|_|panic!("nonblocking mock"));
+            let deadline=std::time::Instant::now()+Duration::from_secs(3);
+            let (mut stream, _) = loop {
+                match listener.accept() {
+                    Ok(stream)=>break stream,
+                    Err(error) if error.kind()==std::io::ErrorKind::WouldBlock && std::time::Instant::now()<deadline=>thread::sleep(Duration::from_millis(5)),
+                    Err(_)=>panic!("test accept deadline"),
+                }
+            };
+            // macOS can inherit O_NONBLOCK on accepted sockets; timed reads must block.
+            stream.set_nonblocking(false).unwrap_or_else(|_|panic!("blocking mock stream"));
             let call = request(&mut stream);
             let response = format!("HTTP/1.1 {code} Test\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n{body}", body.len());
             // Oversized-response tests may close the connection before the write finishes.

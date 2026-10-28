@@ -1,7 +1,10 @@
 //! Explicit, blocking, read-only Core RPC. No wallet imports, signing or broadcast.
+mod budget;
 mod discovery;
+mod utxos;
 use crate::{BitcoinTestnetAccount, bitcoin_address, bitcoin_branch};
 use base64::{Engine, engine::general_purpose::STANDARD};
+use budget::RpcBudget as Budget;
 pub use discovery::{
     BranchDiscovery, Discovery, DiscoveryError, DiscoveryLimits, IncompleteReason,
 };
@@ -15,6 +18,9 @@ use std::{
     path::{Path, PathBuf},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
+pub use utxos::{
+    ConfirmedBalance, ObservedUtxo, UtxoError, UtxoIncompleteReason, UtxoObservation, UtxoScope,
+};
 use zeroize::Zeroizing;
 
 // Core's testnet4 default RPC port and independently published genesis identity.
@@ -23,6 +29,7 @@ const GENESIS: &str = "00000000da84f2bafbbc53dee25a72ae507ff4914b867c565be350b0d
 const MAX_BODY: u64 = 16 * 1024;
 const TIMEOUT: Duration = Duration::from_secs(10);
 const TIP_AGE: u64 = 2 * 60 * 60;
+const DEADLINE: Duration = Duration::from_secs(60);
 
 /// No underlying error text, credentials, paths or descriptors escape.
 #[derive(Debug, PartialEq, Eq)]
@@ -36,6 +43,8 @@ pub enum CoreError {
     IncompatibleDescriptor,
     Derivation,
     ChainChanged,
+    RequestLimit,
+    Deadline,
 }
 
 /// Recent is a node-reported observation, not proof of the global chain tip.
@@ -195,7 +204,8 @@ impl CoreTestnet4 {
                 | "deriveaddresses"
                 | "scanblocks"
                 | "getdescriptoractivity"
-        ) || (method == "scanblocks" && params[0] != "start")
+                | "scantxoutset"
+        ) || (matches!(method, "scanblocks" | "scantxoutset") && params[0] != "start")
         {
             return Err(CoreError::Rpc);
         }

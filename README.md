@@ -87,7 +87,9 @@ local testnet4 identity, reports node sync/tip status and checks public descript
 without creating or importing a Core wallet. Both branches' first two addresses
 match Core 31.1. Separate bounded [confirmed-history discovery](docs/BITCOIN_DISCOVERY.md)
 checks both branches, respects saved counters and rejects incomplete scans/reorgs.
-No balance accounting or UI networking is enabled; the default build stays offline.
+Separate [UTXO observations](docs/BITCOIN_UTXOS.md) return checked confirmed outputs
+and exact satoshi totals for explicit address ranges, not spendable/global balances.
+No UI networking is enabled; the default build stays offline.
 Networking requires the explicit `core-rpc` feature.
 
 Linux builds also require the D-Bus development library (`libdbus-1-dev` on Debian/

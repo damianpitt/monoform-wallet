@@ -90,7 +90,13 @@ Bounded confirmed-history discovery checks scripts, honors saved cursors and
 rejects incomplete scans or detected reorgs without returning partial recommendations.
 Core filter scans use its shared transient scan slot and can outlive a client timeout;
 the client neither aborts another scan nor claims atomic snapshot/consensus protection.
-UI integration, balances, scan-result persistence and signing remain disabled. See
+Scoped UTXO observation matches exact local scripts, rejects duplicate/inconsistent
+outpoints/anchors and independently sums decimal JSON amounts as integer satoshis.
+Confirmed totals include immature coinbases and unconfirmed spends: they are not
+spendable balances or complete-history proofs. Node omission/fabrication and transient
+reorgs between calls remain trust limits. Privacy-sensitive observations have no Debug
+representation or persistence path. UI integration, mempool reconciliation,
+scan-result persistence and signing remain disabled. See
 [Core backend limits and tests](BITCOIN_CORE_BACKEND.md).
 
 ## Review cadence

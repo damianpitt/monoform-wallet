@@ -15,7 +15,7 @@ core-rpc = ["dep:ureq", "dep:serde", "dep:serde_json", "dep:base64", "dep:log"]
 [dependencies]
 ureq = { version = "=3.4.2", default-features = false, optional = true }
 serde = { version = "=1.0.229", default-features = false, features = ["derive", "std"], optional = true }
-serde_json = { version = "=1.0.151", default-features = false, features = ["std"], optional = true }
+serde_json = { version = "=1.0.151", default-features = false, features = ["std", "raw_value"], optional = true }
 base64 = { version = "=0.23.1", default-features = false, features = ["alloc"], optional = true }
 # ureq-proto TRACE dumps raw HTTP bytes, even for sensitive-marked headers.
 log = { version = "=0.4.34", default-features = false, features = ["max_level_off"], optional = true }
