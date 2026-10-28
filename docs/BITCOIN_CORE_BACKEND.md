@@ -6,7 +6,7 @@
 `core-rpc` Cargo feature. Construction does not make a request. The default build
 and desktop demo remain offline; no UI, storage or background polling is connected.
 
-The public API has four operations:
+The public API has five operations:
 
 - `status()` reads chain identity and node-reported sync/tip information.
 - `verify_account(&BitcoinTestnetAccount)` checks both public descriptors and
@@ -17,10 +17,13 @@ The public API has four operations:
   See the [discovery policy and limits](BITCOIN_DISCOVERY.md).
 - `observe_utxos(&account, scope)` checks a confirmed UTXO snapshot within explicit
   address prefixes and sums exact satoshi values. See [scope and limits](BITCOIN_UTXOS.md).
+- `reconcile_mempool(&account, scope)` combines fresh confirmed UTXOs and a bounded,
+  sequence-bracketed local pool overlay. See [pending projection limits](BITCOIN_MEMPOOL.md).
 
 The private RPC allowlist is exactly `getblockchaininfo`, `getblockhash`,
-`getdescriptorinfo`, `deriveaddresses`, `scanblocks` (start only) and
-`getdescriptoractivity` and `scantxoutset` (start only). There is no arbitrary RPC/URL API, wallet
+`getdescriptorinfo`, `deriveaddresses`, `scanblocks` (start only),
+`getdescriptoractivity`, `scantxoutset` (start only), `getmempoolinfo` and
+`getrawmempool`. There is no arbitrary RPC/URL API, wallet
 creation, wallet loading, descriptor import, spendable/global balance claim, signing,
 broadcast or seed-entry path. Core's utility descriptor check needs no Core wallet.
 
@@ -58,7 +61,7 @@ An operation makes at most two requests for status or six for account verificati
 its total time can therefore approach 20 or 60 seconds. Future UI integration must
 use a reviewed background/cancellation path, never block the UI thread. Discovery
 also has a capped request count and a 60-second remaining-time deadline. The UTXO
-operation shares that budget implementation and makes no partial-balance claims.
+and mempool operations share that budget implementation and make no partial-balance claims.
 
 Require JSON-RPC 2.0 and the exact request ID, typed required result fields, valid
 unsigned integer heights/times, consistent heights, and a canonical lowercase
@@ -123,7 +126,9 @@ python3 -B scripts/test_bitcoin_core.py /absolute/path/to/bitcoin-31.1/bin
 The harness builds the public fixture/tests, owns its isolated Core child processes,
 runs compatibility, history and UTXO checks, terminates those children and removes
 only their temporary node directories. It also creates regtest-only coinbase fixtures
-for nonempty UTXO validation; no wallet/private key/signing path is enabled.
+for nonempty UTXO validation. Separate ignored mempool tests sign with published
+test-vector keys only on peer-disabled regtest to verify descendants, replacement
+and confirmation. No production wallet/signing/submission path is enabled.
 It does not install software or stop an existing user's node.
 The default port must be free. CI is configured to run this live check on Linux
 and synthetic backend tests on both platforms; it never requires a public-network sync.
@@ -147,6 +152,8 @@ HTTP TLS/compression defaults and asynchronous runtimes are not enabled.
 
 Bounded [confirmed-history discovery](BITCOIN_DISCOVERY.md) is now implemented
 separately, followed by [scoped UTXO observation](BITCOIN_UTXOS.md). Their incremental
-audit costs and further gates are recorded there. Mempool/spendable balances, monetary
+audit costs and further gates are recorded there. Separate
+[mempool projections](BITCOIN_MEMPOOL.md) now distinguish confirmed and pending
+state without claiming spendability. Spendable balances, historical monetary
 transaction history, persistence of observations/recommendations, UI connection and signing
 remain unimplemented; compatibility/discovery checks do not satisfy those gates.

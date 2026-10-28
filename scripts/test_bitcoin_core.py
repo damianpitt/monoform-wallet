@@ -30,6 +30,7 @@ def isolated_node(bin_dir, network):
                     raise ValueError("isolated Core did not start")
                 time.sleep(0.1)
             environment = dict(os.environ, MONOFORM_TEST_CORE_DIR=datadir,
+                               MONOFORM_TEST_CORE_BIN=str(bin_dir),
                                PATH=str(bin_dir) + os.pathsep + os.environ.get("PATH", ""))
             environment.pop("MONOFORM_REGTEST_FIXTURE", None)
             cli = [str(bin_dir / "bitcoin-cli"), "-" + network, "-conf=/dev/null",
@@ -69,6 +70,7 @@ def run(bin_dir):
         subprocess.run([cargo, "test", "--locked", "--features", "core-rpc", "--lib", name,
                         "--", "--ignored", "--exact"], check=True, env=environment, timeout=90)
     utxo_test = "core_rpc::utxos::tests::core_utxo_scan_schemas_match_and_nonempty_amounts_are_exact"
+    pending_test = "core_rpc::mempool::tests::core_pending_chains_replacement_and_confirmation_match"
     with isolated_node(bin_dir, "testnet4") as (datadir, environment, _):
         subprocess.run([sys.executable, "-B", "scripts/check_bitcoin_core.py", datadir],
                        input=fixture.stdout, check=True, env=environment, timeout=60)
@@ -76,8 +78,10 @@ def run(bin_dir):
                         "bitcoin_core_live", "--", "--ignored"], check=True, env=environment, timeout=90)
         native_test("core_rpc::discovery::tests::core_genesis_filter_scan_and_activity_schema_match", environment)
         native_test(utxo_test, environment)
+        native_test(pending_test, environment)
     with isolated_node(bin_dir, "regtest") as (_, environment, rpc):
-        # Regtest coins only: no keys, signatures, wallets or public-network broadcasts.
+        # Coinbases only here; ignored mempool tests sign published-fixture keys on
+        # this peer-disabled regtest node. Production exposes no signing/broadcast.
         receive, change = json.loads(fixture.stdout)["descriptors"]
         receive_zero = rpc("deriveaddresses", receive, "[0,0]")[0]
         change_zero = rpc("deriveaddresses", change, "[0,0]")[0]
@@ -86,6 +90,7 @@ def run(bin_dir):
         rpc("generatetoaddress", "100", outside_scope)
         rpc("generatetoaddress", "1", change_zero)
         native_test(utxo_test, dict(environment, MONOFORM_REGTEST_FIXTURE="1"))
+        native_test(pending_test, dict(environment, MONOFORM_REGTEST_FIXTURE="1"))
 
 
 if __name__ == "__main__":

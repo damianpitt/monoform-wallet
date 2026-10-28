@@ -3,10 +3,10 @@ use super::*;
 use crate::core_rpc::tests::{calls, chain, envelope, fixture, mock};
 use serde_json::Value;
 
-fn hash(n: u8) -> String {
+pub(in crate::core_rpc) fn hash(n: u8) -> String {
     format!("{n:064x}")
 }
-fn ok(mut value: Value) -> (u16, String) {
+pub(in crate::core_rpc) fn ok(mut value: Value) -> (u16, String) {
     // Test fixtures must preserve raw decimal spelling too, rather than round-trip
     // monetary numbers through serde_json::Value's floating-point representation.
     fn extract(value: &mut Value, numbers: &mut Vec<(String, String)>) {
@@ -38,13 +38,13 @@ fn ok(mut value: Value) -> (u16, String) {
     }
     (200, body)
 }
-fn scope() -> UtxoScope {
+pub(in crate::core_rpc) fn scope() -> UtxoScope {
     UtxoScope {
         receive_count: 20,
         change_count: 20,
     }
 }
-fn recent(height: u32, tip: u8) -> Value {
+pub(in crate::core_rpc) fn recent(height: u32, tip: u8) -> Value {
     let mut info = chain();
     info["blocks"] = json!(height);
     info["headers"] = json!(height);
@@ -58,10 +58,10 @@ fn recent(height: u32, tip: u8) -> Value {
     );
     info
 }
-fn start() -> Vec<(u16, String)> {
+pub(in crate::core_rpc) fn start() -> Vec<(u16, String)> {
     vec![ok(recent(102, 1)), ok(json!(GENESIS)), ok(json!(hash(1)))]
 }
-fn finish() -> Vec<(u16, String)> {
+pub(in crate::core_rpc) fn finish() -> Vec<(u16, String)> {
     vec![
         ok(recent(102, 1)),
         ok(json!(GENESIS)),
@@ -72,7 +72,13 @@ fn finish() -> Vec<(u16, String)> {
 fn amount(raw: &str) -> Value {
     json!({"amount":format!("raw-btc:{raw}")})
 }
-fn output(branch: u32, index: u32, tx: u8, height: u32, coinbase: bool) -> Value {
+pub(in crate::core_rpc) fn output(
+    branch: u32,
+    index: u32,
+    tx: u8,
+    height: u32,
+    coinbase: bool,
+) -> Value {
     let generated = scoped_scripts(&fixture(), scope()).unwrap_or_else(|_| panic!("scripts"));
     let hex = generated
         .iter()
@@ -82,8 +88,35 @@ fn output(branch: u32, index: u32, tx: u8, height: u32, coinbase: bool) -> Value
     json!({"txid":hash(tx),"vout":0,"scriptPubKey":hex,"amount":1,"coinbase":coinbase,
         "height":height,"blockhash":hash(if height==102 {1} else {height as u8}),"confirmations":102-height+1})
 }
-fn snapshot(outputs: Vec<Value>, total: u64) -> Value {
+pub(in crate::core_rpc) fn snapshot(outputs: Vec<Value>, total: u64) -> Value {
     json!({"success":true,"txouts":outputs.len(),"height":102,"bestblock":hash(1),"unspents":outputs,"total_amount":total})
+}
+
+// Private integration-fixture helper. Production still requires testnet4 readiness.
+pub(in crate::core_rpc) fn live_confirmed(
+    core: &CoreTestnet4,
+    account: &BitcoinTestnetAccount,
+) -> UtxoObservation {
+    let mut budget = Budget {
+        core,
+        remaining: 80,
+        started: Instant::now(),
+    };
+    let scan = budget
+        .utxo_scan(account, scope())
+        .unwrap_or_else(|_| panic!("fixture UTXO snapshot"));
+    let scripts = scoped_scripts(account, scope()).unwrap_or_else(|_| panic!("fixture scripts"));
+    let (balance, utxos) = budget
+        .validate_utxos(&scan, &scripts)
+        .unwrap_or_else(|_| panic!("fixture UTXO consistency"));
+    UtxoObservation {
+        anchor_height: scan.height,
+        anchor_hash: scan.bestblock,
+        observed_at: SystemTime::now(),
+        scope: scope(),
+        balance,
+        utxos,
+    }
 }
 
 #[test]

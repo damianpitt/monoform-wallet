@@ -71,7 +71,10 @@ and offers bounded [confirmed-history discovery](BITCOIN_DISCOVERY.md) anchored 
 one tip with saved-counter and reorg rules. Separate
 [scoped UTXO observation](BITCOIN_UTXOS.md) associates outputs with local scripts,
 checks anchors and sums exact satoshis without floating-point conversion. Both
-operations share one bounded RPC helper. Mempool/spendable balances, transaction history, applying
+operations share one bounded RPC helper. A separate
+[mempool observation](BITCOIN_MEMPOOL.md) brackets fresh confirmed/pending state
+with pool IDs/sequence and chain checks, projects descendant spends without double
+counting, and rejects changed snapshots. Spendable balances, a transaction ledger, applying
 discovery recommendations, the encrypted seed vault and wallet UI integration remain
 unimplemented. See the [backend boundary](BITCOIN_CORE_BACKEND.md),
 [codec](BITCOIN_PUBLIC_STATE.md) and [storage protocol](PUBLIC_STATE_STORAGE.md).

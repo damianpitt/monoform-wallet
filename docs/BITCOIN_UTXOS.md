@@ -122,5 +122,8 @@ The change adds **330 net production Rust lines**, including comments/formatting
 adds a library feature to the existing opt-in dependency, not a new decimal/runtime
 library. Test/harness growth is reported separately from production code.
 
-Next: bounded mempool-aware pending-spend/receipt reconciliation. Saved-state writes,
-coin selection, signing, mainnet and UI integration remain gated.
+Separate [bounded mempool reconciliation](BITCOIN_MEMPOOL.md) now uses this UTXO
+operation within the same deadline; standalone confirmed observations retain their
+original semantics. Saved-state writes, coin selection, signing, mainnet and UI
+integration remain gated. The expanded live harness uses published-vector signing
+only in ignored regtest fixtures; production still has no signing/submission API.

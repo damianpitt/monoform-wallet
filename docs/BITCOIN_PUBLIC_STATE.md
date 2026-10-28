@@ -91,6 +91,10 @@ Separate [scoped UTXO observation](BITCOIN_UTXOS.md) now returns checked confirm
 outputs and exact satoshi sums. It does not issue addresses, save results or imply
 complete history, pending-spend reconciliation or spendability.
 
+Separate [pending reconciliation](BITCOIN_MEMPOOL.md) now combines a fresh scoped
+UTXO snapshot with a loaded, bounded local pool, using the same work budget and
+sequence/tip checks. It neither applies discovery counters nor enables the UI.
+
 Discovery starts at index zero for both account-0 branches. Require 20 consecutive
 addresses with no transaction history beyond both the last used address and the
 known issued counter before stopping. Using 20 for the external branch follows

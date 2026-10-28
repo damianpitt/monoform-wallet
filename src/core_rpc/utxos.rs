@@ -6,7 +6,7 @@ use std::{
 };
 
 const COIN: u64 = 100_000_000;
-const MAX_MONEY: u64 = 21_000_000 * COIN;
+pub(super) const MAX_MONEY: u64 = 21_000_000 * COIN;
 const MAX_UTXOS: usize = 64;
 
 /// Counts (not final indices). Caller chooses ranges; zero UTXOs never prove discovery.
@@ -82,25 +82,29 @@ impl CoreTestnet4 {
         account: &BitcoinTestnetAccount,
         scope: UtxoScope,
     ) -> Result<UtxoObservation, UtxoError> {
-        if !(1..=10_000).contains(&scope.receive_count)
-            || !(1..=10_000).contains(&scope.change_count)
-            || scope.receive_count < account.next_receive
-            || scope.change_count < account.next_change
-        {
-            return Err(UtxoError::InvalidScope);
-        }
         let mut budget = Budget {
             core: self,
             remaining: 80,
             started: Instant::now(),
         };
-        let before = budget.status()?;
+        budget.observe_utxos(account, scope)
+    }
+}
+
+impl Budget<'_> {
+    pub(super) fn observe_utxos(
+        &mut self,
+        account: &BitcoinTestnetAccount,
+        scope: UtxoScope,
+    ) -> Result<UtxoObservation, UtxoError> {
+        validate_scope(account, scope)?;
+        let before = self.status()?;
         ready(&before)?;
-        if budget.call::<String>("getblockhash", json!([before.blocks]))? != before.tip_hash {
+        if self.call::<String>("getblockhash", json!([before.blocks]))? != before.tip_hash {
             return Err(UtxoError::Reorg);
         }
         let scripts = scoped_scripts(account, scope)?;
-        let scan = budget.utxo_scan(account, scope)?;
+        let scan = self.utxo_scan(account, scope)?;
         if scan.height < before.blocks
             || (scan.height == before.blocks && scan.bestblock != before.tip_hash)
         {
@@ -108,11 +112,11 @@ impl CoreTestnet4 {
         }
         // Allow normal tip growth while scanning, but require BOTH observed anchors
         // to remain active. Do not mix two different UTXO snapshots or rescan silently.
-        let (balance, utxos) = budget.validate_utxos(&scan, &scripts)?;
-        let after = budget.status()?;
+        let (balance, utxos) = self.validate_utxos(&scan, &scripts)?;
+        let after = self.status()?;
         if after.blocks < scan.height
-            || budget.call::<String>("getblockhash", json!([before.blocks]))? != before.tip_hash
-            || budget.call::<String>("getblockhash", json!([scan.height]))? != scan.bestblock
+            || self.call::<String>("getblockhash", json!([before.blocks]))? != before.tip_hash
+            || self.call::<String>("getblockhash", json!([scan.height]))? != scan.bestblock
         {
             return Err(UtxoError::Reorg);
         }
@@ -128,7 +132,21 @@ impl CoreTestnet4 {
     }
 }
 
-fn ready(status: &NodeStatus) -> Result<(), UtxoError> {
+pub(super) fn validate_scope(
+    account: &BitcoinTestnetAccount,
+    scope: UtxoScope,
+) -> Result<(), UtxoError> {
+    if !(1..=10_000).contains(&scope.receive_count)
+        || !(1..=10_000).contains(&scope.change_count)
+        || scope.receive_count < account.next_receive
+        || scope.change_count < account.next_change
+    {
+        return Err(UtxoError::InvalidScope);
+    }
+    Ok(())
+}
+
+pub(super) fn ready(status: &NodeStatus) -> Result<(), UtxoError> {
     // Pruning removes history, not the validated UTXO set; this API is not discovery.
     match status.state {
         NodeState::Syncing => Err(UtxoError::Incomplete(UtxoIncompleteReason::Syncing)),
@@ -137,7 +155,7 @@ fn ready(status: &NodeStatus) -> Result<(), UtxoError> {
     }
 }
 
-fn scoped_scripts(
+pub(super) fn scoped_scripts(
     account: &BitcoinTestnetAccount,
     scope: UtxoScope,
 ) -> Result<BTreeMap<String, (u32, u32)>, UtxoError> {
@@ -248,7 +266,7 @@ impl Budget<'_> {
 }
 
 // RawValue preserves the original JSON numeric lexeme: no f64 conversion or rounding.
-fn satoshis<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<u64, D::Error> {
+pub(super) fn satoshis<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<u64, D::Error> {
     let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
     parse_satoshis(raw.get()).ok_or_else(|| serde::de::Error::custom("invalid Bitcoin amount"))
 }
@@ -306,4 +324,4 @@ struct RawUtxo {
 }
 
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

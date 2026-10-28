@@ -433,10 +433,21 @@ fn no_arbitrary_rpc_method_can_be_invoked() {
         "createwallet",
         "importdescriptors",
         "sendrawtransaction",
+        "signrawtransactionwithkey",
+        "walletprocesspsbt",
+        "submitpackage",
         "stop",
         "scantxoutset",
     ] {
         assert_eq!(client.rpc::<String>(method, json!([])), Err(CoreError::Rpc));
+    }
+    for method in ["scanblocks", "scantxoutset"] {
+        for action in ["abort", "status"] {
+            assert_eq!(
+                client.rpc::<String>(method, json!([action])),
+                Err(CoreError::Rpc)
+            );
+        }
     }
 }
 

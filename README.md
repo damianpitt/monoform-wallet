@@ -89,6 +89,8 @@ match Core 31.1. Separate bounded [confirmed-history discovery](docs/BITCOIN_DIS
 checks both branches, respects saved counters and rejects incomplete scans/reorgs.
 Separate [UTXO observations](docs/BITCOIN_UTXOS.md) return checked confirmed outputs
 and exact satoshi totals for explicit address ranges, not spendable/global balances.
+Separate [pending projections](docs/BITCOIN_MEMPOOL.md) reconcile bounded local
+mempool spends/receipts, including descendants, and reject changing snapshots.
 No UI networking is enabled; the default build stays offline.
 Networking requires the explicit `core-rpc` feature.
 

@@ -95,7 +95,10 @@ outpoints/anchors and independently sums decimal JSON amounts as integer satoshi
 Confirmed totals include immature coinbases and unconfirmed spends: they are not
 spendable balances or complete-history proofs. Node omission/fabrication and transient
 reorgs between calls remain trust limits. Privacy-sensitive observations have no Debug
-representation or persistence path. UI integration, mempool reconciliation,
+representation or persistence path. Bounded mempool reconciliation brackets fresh
+confirmed/pending observations with pool IDs/sequence and chain checks, rejects
+duplicates/cycles/inconsistent inputs, and never equates a projection with spendability.
+Local-pool omissions and restart/restore races remain trust limits. UI integration,
 scan-result persistence and signing remain disabled. See
 [Core backend limits and tests](BITCOIN_CORE_BACKEND.md).
 
