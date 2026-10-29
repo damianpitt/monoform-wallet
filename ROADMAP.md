@@ -36,6 +36,7 @@ Dates are intentionally absent. Security gates, not launch pressure, advance a p
 - [x] Bounded confirmed-history receive/change discovery, saved-counter policy and reorg rejection
 - [x] Anchored scoped read-only UTXO observations and exact integer-satoshi confirmed balances
 - [x] Bounded local mempool reconciliation for pending spends/receipts and descendant chains
+- [x] Initial dependency/feature inventory and optional desktop build isolation
 - [ ] Historical transaction ledger, RBF/fee-bump management and user-facing review
 - [ ] Protected atomic application of discovery recommendations and UI integration
 - [ ] Receive, coin-aware send, fee selection, and transaction review
@@ -43,6 +44,11 @@ Dates are intentionally absent. Security gates, not launch pressure, advance a p
 - [ ] Memory-zeroization tests and secret-redaction tests
 - [ ] Linux and macOS reproducible build path
 - [ ] Dependency vulnerability and license checks enforced in CI
+
+Before further wallet features, resolve or rigorously triage the cryptography
+advisories in the [dependency review](docs/DEPENDENCY_REVIEW.md), plan the upstream
+Linux accessibility migration, and add automated vulnerability/license gates.
+Build/test success does not clear these findings for real-funds use.
 
 Public-state format and the pending storage/backend boundaries are documented in
 [`docs/BITCOIN_PUBLIC_STATE.md`](docs/BITCOIN_PUBLIC_STATE.md). The codec is in-memory

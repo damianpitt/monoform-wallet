@@ -99,6 +99,13 @@ arbitrary calldata, approvals, permits, and unknown contracts are rejected.
 - No runtime code downloads, remote configuration, analytics, or third-party scripts.
 - Every release includes a software bill of materials.
 
+The default build excludes the GUI and HTTP client. `desktop` enables eframe and
+`core-rpc` independently enables the loopback backend. Feature selection narrows a
+build's dependencies; it is not process isolation or a substitute for source review.
+The [2026-10-29 dependency review](DEPENDENCY_REVIEW.md) records the measured graphs
+and unresolved upstream advisories. Automated vulnerability/license enforcement
+remains an open gate.
+
 ## Why desktop first
 
 Rust with egui/eframe keeps the maintained application in one primary language and
