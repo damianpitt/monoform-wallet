@@ -43,12 +43,13 @@ Dates are intentionally absent. Security gates, not launch pressure, advance a p
 - [ ] Encrypted local keystore using operating-system facilities
 - [ ] Memory-zeroization tests and secret-redaction tests
 - [ ] Linux and macOS reproducible build path
-- [ ] Dependency vulnerability and license checks enforced in CI
+- [x] Dependency vulnerability/license/source policy checked in CI, with explicit maintenance exceptions
 
-Before further wallet features, resolve or rigorously triage the cryptography
-advisories in the [dependency review](docs/DEPENDENCY_REVIEW.md), plan the upstream
-Linux accessibility migration, and add automated vulnerability/license gates.
-Build/test success does not clear these findings for real-funds use.
+The [dependency remediation](docs/DEPENDENCY_REMEDIATION.md) upgrades the flagged
+crypto stack, corrects the buffer finding's scope and enforces a dated exception
+policy for Linux accessibility maintenance. Complete that upstream migration before
+release; CI stops accepting its maintenance exceptions from 2026-12-01 UTC.
+Build/test success is not independent review or approval for real-funds use.
 
 Public-state format and the pending storage/backend boundaries are documented in
 [`docs/BITCOIN_PUBLIC_STATE.md`](docs/BITCOIN_PUBLIC_STATE.md). The codec is in-memory

@@ -138,9 +138,11 @@ cargo test --locked --lib storage::tests::native_store_round_trip -- --ignored -
 CI runs the suite on macOS and Linux, including native Keychain and an isolated Linux
 Secret Service session. This is not a real-wallet recovery drill. Packaged-app signing
 identity/Keychain authorization across upgrades, Linux collection lock/reboot behavior,
-disk-full/flush/physical-power-loss testing, dependency security/license checks, two
+disk-full/flush/physical-power-loss testing, distribution notices/SBOM, two
 maintainer approvals, and independent storage review remain release gates. The seed
 vault is still unimplemented; no real funds or secret-entry UI are enabled.
+Dependency advisory/license/source policy is now checked in CI, with the explicit
+maintenance exceptions recorded in [the remediation](DEPENDENCY_REMEDIATION.md).
 
 ## Audit-surface cost of this checkpoint
 

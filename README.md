@@ -75,7 +75,9 @@ The default build contains the offline core and protected public-state storage.
 The `desktop` feature adds the demonstration interface; `core-rpc` separately adds
 the read-only local Bitcoin backend. Neither enables the other. See the dated
 [dependency and feature review](docs/DEPENDENCY_REVIEW.md) for measured footprints,
-known public advisories and remaining release gates.
+known public advisories and remaining release gates. The subsequent
+[dependency remediation](docs/DEPENDENCY_REMEDIATION.md) upgrades the crypto stack
+and adds automated advisory/license/source checks with explicit maintenance exceptions.
 
 An offline-only BIP39 seed core exists, but there is no seed-entry UI or wallet-import
 path. It must not be used with real funds before vault, derivation, and independent

@@ -1,0 +1,35 @@
+# Scan every enabled component, including build/dev dependencies, for CI targets.
+[graph]
+all-features = true
+targets = ["aarch64-apple-darwin", "x86_64-unknown-linux-gnu"]
+
+[advisories]
+yanked = "deny"
+unmaintained = "all"
+unsound = "all"
+unused-ignored-advisory = "deny"
+# Standalone D-Bus crates moved into zbus 6. Accessibility's current upstream
+# still requires zbus 5. These are maintenance notices, not vulnerability waivers.
+# CI rejects these exceptions from 2026-12-01 UTC; cargo-deny 0.20.2 has no expiry.
+ignore = [
+    { id = "RUSTSEC-2026-0370", reason = "Linux accessibility migration; CI deadline 2026-12-01; see docs/DEPENDENCY_REMEDIATION.md" },
+    { id = "RUSTSEC-2026-0371", reason = "Linux accessibility migration; CI deadline 2026-12-01; see docs/DEPENDENCY_REMEDIATION.md" },
+    { id = "RUSTSEC-2026-0372", reason = "Linux accessibility migration; CI deadline 2026-12-01; see docs/DEPENDENCY_REMEDIATION.md" },
+]
+
+[licenses]
+include-dev = true
+confidence-threshold = 0.95
+allow = [
+    "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "CC0-1.0",
+    "ISC", "MIT", "Unicode-3.0", "Zlib",
+]
+exceptions = [
+    { crate = "monoform-wallet@0.0.1", allow = ["GPL-3.0-or-later"] },
+    { crate = "epaint_default_fonts@0.36.1", allow = ["OFL-1.1", "Ubuntu-font-1.0"] },
+    { crate = "hex_lit@0.1.1", allow = ["MITNFA"] },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

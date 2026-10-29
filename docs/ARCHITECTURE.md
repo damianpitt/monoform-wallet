@@ -102,9 +102,11 @@ arbitrary calldata, approvals, permits, and unknown contracts are rejected.
 The default build excludes the GUI and HTTP client. `desktop` enables eframe and
 `core-rpc` independently enables the loopback backend. Feature selection narrows a
 build's dependencies; it is not process isolation or a substitute for source review.
-The [2026-10-29 dependency review](DEPENDENCY_REVIEW.md) records the measured graphs
-and unresolved upstream advisories. Automated vulnerability/license enforcement
-remains an open gate.
+The [2026-10-29 dependency review](DEPENDENCY_REVIEW.md) records the baseline graphs
+and advisory inventory. The [2026-10-30 remediation](DEPENDENCY_REMEDIATION.md)
+records the patched cryptography stack and automated advisory/license/source policy.
+Three accessibility maintenance exceptions remain with an enforced CI deadline;
+independent security review and release license obligations remain open gates.
 
 ## Why desktop first
 

@@ -1,5 +1,10 @@
 # Dependency and feature review — 2026-10-29
 
+Historical baseline. The [2026-10-30 remediation](DEPENDENCY_REMEDIATION.md) records
+the patched crypto stack, corrected buffer-advisory applicability, automated policy
+checks and remaining maintenance exceptions. Counts and findings below describe
+the earlier checkpoint, not the current security disposition.
+
 Scope: the `71133f1` baseline plus this desktop-feature separation. This is a
 first-party inventory and public-advisory triage, not an independent security audit
 or release approval. No cryptographic primitive, OS-storage protection, parsing

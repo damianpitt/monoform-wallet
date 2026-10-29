@@ -129,5 +129,6 @@ see [the verification record](BITCOIN_CORE_BACKEND.md).
 The roadmap separates the codec and protected public storage from pending seed-vault,
 backend, and UI work. Physical power-loss and packaged-app credential lifecycle tests
 remain release gates; current storage is a pre-alpha checkpoint, not audited software.
-Dependency vulnerability/license CI checks, maintainer approvals, and signed-release
-policy are still required; a passing codec test suite does not satisfy those gates.
+Dependency advisory/license/source checks are now implemented with the explicit
+maintenance exceptions in [the policy record](DEPENDENCY_REMEDIATION.md). Maintainer
+approvals and signed-release policy remain gates; passing tests do not satisfy them.
