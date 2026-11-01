@@ -70,12 +70,29 @@ pub struct BranchDiscovery {
 }
 
 /// Complete only under the documented gap policy, at this confirmed-chain anchor.
+/// Private fields bind read-only recommendations to the complete scanned account.
 /// Neither this result nor its branch counters are automatically persisted.
 pub struct Discovery {
-    pub anchor_height: u32,
-    pub anchor_hash: String,
-    pub receive: BranchDiscovery,
-    pub change: BranchDiscovery,
+    anchor_height: u32,
+    anchor_hash: String,
+    receive: BranchDiscovery,
+    change: BranchDiscovery,
+    pub(crate) recommendation: BitcoinTestnetAccount,
+}
+
+impl Discovery {
+    pub fn anchor_height(&self) -> u32 {
+        self.anchor_height
+    }
+    pub fn anchor_hash(&self) -> &str {
+        &self.anchor_hash
+    }
+    pub fn receive(&self) -> &BranchDiscovery {
+        &self.receive
+    }
+    pub fn change(&self) -> &BranchDiscovery {
+        &self.change
+    }
 }
 
 impl CoreTestnet4 {
@@ -128,6 +145,13 @@ impl CoreTestnet4 {
         ready(&after)?;
         // A longer chain with the original anchor still active is allowed, not a reorg.
         Ok(Discovery {
+            // Construct only after both branches and the final anchor check succeed.
+            recommendation: BitcoinTestnetAccount {
+                fingerprint: account.fingerprint,
+                account: account.account.clone(),
+                next_receive: receive.next_index,
+                next_change: change.next_index,
+            },
             anchor_height: anchor.blocks,
             anchor_hash: anchor.tip_hash,
             receive,
@@ -286,4 +310,4 @@ struct Script {
 }
 
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

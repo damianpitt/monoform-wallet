@@ -117,7 +117,8 @@ the pending parent/child → replacement → confirmation fixture on isolated no
 Temporary negative fixtures proved that the policy rejects the old vulnerable
 bigint and an unapproved license. No custom cryptography or advisory scanner is added.
 
-Next functional module: protected atomic application of discovery recommendations,
-with complete account matching and counters that cannot move backward. Independent
+The following functional module implements [protected atomic application of discovery
+recommendations](BITCOIN_DISCOVERY_STORAGE.md), with complete account matching and
+counters that cannot move backward. Independent
 crypto/application review, packaged storage lifecycle validation, reproducible builds,
 notices/SBOM and release controls remain gates before real-funds use.

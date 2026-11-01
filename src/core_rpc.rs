@@ -356,4 +356,6 @@ struct RpcFailure {
 }
 
 #[cfg(test)]
+pub(crate) use discovery::tests::complete_discovery;
+#[cfg(test)]
 mod tests;

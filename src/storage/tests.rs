@@ -6,6 +6,9 @@ use std::{
 };
 use tempfile::TempDir;
 
+#[cfg(feature = "core-rpc")]
+mod discovery;
+
 // Public Trezor vector only; never protect real funds with these words.
 const PHRASE: &str = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art";
 
@@ -451,6 +454,15 @@ fn native_store_round_trip() {
         let mut reopened = PublicStateStore::open(&path)?;
         assert_eq!(counters(&reopened), (1, 0));
         assert_ne!(received, reopened.reserve_receive_address()?);
+        #[cfg(feature = "core-rpc")]
+        {
+            let snapshot = reopened.public_account()?;
+            let result = crate::core_rpc::complete_discovery(&snapshot, [Some(3), Some(5)]);
+            reopened.apply_discovery(&result)?;
+            drop(reopened);
+            let persisted = PublicStateStore::open(&path)?;
+            assert_eq!(counters(&persisted), (4, 6));
+        }
         Ok(())
     })();
     // Delete only the credential for this fresh, randomized temporary fixture path.

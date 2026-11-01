@@ -112,6 +112,7 @@ lines to share one budget. No dependency, version, Cargo feature or lockfile cha
 the resolved graph remains 459 packages. Test/harness additions are separate from
 production code. The preceding UTXO module was backed up separately as `7c53985`.
 
-Next: protected atomic application of discovery recommendations, with complete
-account matching and monotonic counters. UI integration, seed persistence, signing
+The following checkpoint implements [protected atomic application of discovery
+recommendations](BITCOIN_DISCOVERY_STORAGE.md), with complete account matching and
+monotonic counters. UI integration, seed persistence, signing
 and mainnet remain gated; these observation checks do not satisfy release review.

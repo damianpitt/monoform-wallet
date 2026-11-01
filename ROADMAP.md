@@ -38,7 +38,8 @@ Dates are intentionally absent. Security gates, not launch pressure, advance a p
 - [x] Bounded local mempool reconciliation for pending spends/receipts and descendant chains
 - [x] Initial dependency/feature inventory and optional desktop build isolation
 - [ ] Historical transaction ledger, RBF/fee-bump management and user-facing review
-- [ ] Protected atomic application of discovery recommendations and UI integration
+- [x] Protected atomic application of full-account-bound discovery recommendations
+- [ ] Bounded watch-only refresh flow and UI integration
 - [ ] Receive, coin-aware send, fee selection, and transaction review
 - [ ] Encrypted local keystore using operating-system facilities
 - [ ] Memory-zeroization tests and secret-redaction tests

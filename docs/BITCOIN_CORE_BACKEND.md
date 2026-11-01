@@ -4,7 +4,8 @@
 
 `core_rpc::CoreTestnet4` is a blocking macOS/Linux client enabled only by the
 `core-rpc` Cargo feature. Construction does not make a request. The default build
-and desktop demo remain offline; no UI, storage or background polling is connected.
+and desktop demo remain offline; no UI or background polling is connected. Callers
+may explicitly apply discovery counters through the separate protected store.
 
 The public API has five operations:
 
@@ -154,6 +155,8 @@ Bounded [confirmed-history discovery](BITCOIN_DISCOVERY.md) is now implemented
 separately, followed by [scoped UTXO observation](BITCOIN_UTXOS.md). Their incremental
 audit costs and further gates are recorded there. Separate
 [mempool projections](BITCOIN_MEMPOOL.md) now distinguish confirmed and pending
-state without claiming spendability. Spendable balances, historical monetary
-transaction history, persistence of observations/recommendations, UI connection and signing
-remain unimplemented; compatibility/discovery checks do not satisfy those gates.
+state without claiming spendability. An explicit
+[protected counter application](BITCOIN_DISCOVERY_STORAGE.md) now saves discovery
+recommendations. Spendable balances, historical monetary transaction history, full
+observation persistence, UI connection and signing remain unimplemented;
+compatibility/discovery checks do not satisfy those gates.

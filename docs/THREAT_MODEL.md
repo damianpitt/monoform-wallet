@@ -78,6 +78,13 @@ an old state file and its OS marker need a separate recovery design. See
 [Storage protocol and release gates](PUBLIC_STATE_STORAGE.md). Seed storage and UI
 integration remain disabled.
 
+Explicit [discovery application](BITCOIN_DISCOVERY_STORAGE.md) binds complete results
+to the full extended account key and origin, then reloads and merges counters upward
+under the store lock. Full-key checks reject mismatches even when origin fingerprints
+collide; upward merging preserves later reservations. Existing recovery handles
+interrupted commits with the same durability limits. Full scan/anchor records are
+not persisted or claimed fresh by saving counters.
+
 ## Local read-only Core boundary
 
 The opt-in backend accepts only fixed loopback testnet4 RPC with local cookie
@@ -94,12 +101,13 @@ Scoped UTXO observation matches exact local scripts, rejects duplicate/inconsist
 outpoints/anchors and independently sums decimal JSON amounts as integer satoshis.
 Confirmed totals include immature coinbases and unconfirmed spends: they are not
 spendable balances or complete-history proofs. Node omission/fabrication and transient
-reorgs between calls remain trust limits. Privacy-sensitive observations have no Debug
-representation or persistence path. Bounded mempool reconciliation brackets fresh
+reorgs between calls remain trust limits. Full privacy-sensitive observations have
+no Debug representation or persistence path; only discovered account counters can
+be explicitly merged into protected state. Bounded mempool reconciliation brackets fresh
 confirmed/pending observations with pool IDs/sequence and chain checks, rejects
 duplicates/cycles/inconsistent inputs, and never equates a projection with spendability.
 Local-pool omissions and restart/restore races remain trust limits. UI integration,
-scan-result persistence and signing remain disabled. See
+full scan-record caching and signing remain disabled. See
 [Core backend limits and tests](BITCOIN_CORE_BACKEND.md).
 
 ## Review cadence

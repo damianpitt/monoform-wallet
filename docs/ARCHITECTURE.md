@@ -74,9 +74,11 @@ checks anchors and sums exact satoshis without floating-point conversion. Both
 operations share one bounded RPC helper. A separate
 [mempool observation](BITCOIN_MEMPOOL.md) brackets fresh confirmed/pending state
 with pool IDs/sequence and chain checks, projects descendant spends without double
-counting, and rejects changed snapshots. Spendable balances, a transaction ledger, applying
-discovery recommendations, the encrypted seed vault and wallet UI integration remain
-unimplemented. See the [backend boundary](BITCOIN_CORE_BACKEND.md),
+counting, and rejects changed snapshots. An explicit
+[discovery application step](BITCOIN_DISCOVERY_STORAGE.md) compares the full account,
+merges both counters upward and reuses protected atomic storage. Full observations
+remain transient. Spendable balances, a transaction ledger, the encrypted seed vault
+and wallet UI integration remain unimplemented. See the [backend boundary](BITCOIN_CORE_BACKEND.md),
 [codec](BITCOIN_PUBLIC_STATE.md) and [storage protocol](PUBLIC_STATE_STORAGE.md).
 
 ### EVM networks and assets

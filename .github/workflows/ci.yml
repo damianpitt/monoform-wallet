@@ -53,13 +53,13 @@ jobs:
         run: python3 -B -m unittest discover -s scripts -p '*_test.py'
       - name: Native macOS Keychain smoke test (public fixture only)
         if: runner.os == 'macOS'
-        run: cargo test --locked --lib storage::tests::native_store_round_trip -- --ignored --exact
+        run: cargo test --locked --features core-rpc --lib storage::tests::native_store_round_trip -- --ignored --exact
       - name: Native Linux Secret Service smoke test (isolated CI session)
         if: runner.os == 'Linux'
         run: |
           dbus-run-session -- sh -eu -c '
             printf "%s" "monoform-ci-public-fixture" | gnome-keyring-daemon --unlock --components=secrets
-            cargo test --locked --lib storage::tests::native_store_round_trip -- --ignored --exact
+            cargo test --locked --features core-rpc --lib storage::tests::native_store_round_trip -- --ignored --exact
           '
       - name: Bitcoin Core 31.1 compatibility (isolated, no wallets or peers)
         if: runner.os == 'Linux'

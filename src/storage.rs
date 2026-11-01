@@ -34,6 +34,7 @@ pub enum StorageError {
     InvalidState,
     Rollback,
     Derivation,
+    AccountMismatch,
 }
 
 // Only native credentials are constructible through the public API; mocks are test-only.
@@ -88,9 +89,14 @@ impl PublicStateStore {
         Ok(store)
     }
 
+    /// Owned watch-only snapshot, including saved counters; never contains a seed.
+    /// Account keys reveal address linkage: keep the snapshot out of logs.
+    pub fn public_account(&self) -> Result<BitcoinTestnetAccount, StorageError> {
+        Ok(self.load()?.0)
+    }
+
     pub fn descriptors(&self) -> Result<BitcoinTestnetDescriptors, StorageError> {
-        self.load()?
-            .0
+        self.public_account()?
             .descriptors()
             .map_err(|_| StorageError::Derivation)
     }
@@ -102,6 +108,30 @@ impl PublicStateStore {
 
     pub fn reserve_change_address(&mut self) -> Result<String, StorageError> {
         self.reserve(true)
+    }
+
+    /// Apply a complete discovery for this exact account, without contacting Core.
+    /// An older scan may skip indices, but can never undo later reservations.
+    #[cfg(feature = "core-rpc")]
+    pub fn apply_discovery(
+        &mut self,
+        discovery: &crate::core_rpc::Discovery,
+    ) -> Result<(), StorageError> {
+        let candidate = &discovery.recommendation;
+        let (mut account, mut anchor) = self.load()?;
+        // A 32-bit origin fingerprint alone is not identity: compare the full XPub,
+        // including its chain code, parent fingerprint, depth and child number.
+        if account.fingerprint != candidate.fingerprint || account.account != candidate.account {
+            return Err(StorageError::AccountMismatch);
+        }
+        let receive = account.next_receive.max(candidate.next_receive);
+        let change = account.next_change.max(candidate.next_change);
+        if (receive, change) == (account.next_receive, account.next_change) {
+            return Ok(());
+        }
+        account.next_receive = receive;
+        account.next_change = change;
+        self.commit(&account, &mut anchor)
     }
 
     fn connect(path: &Path, create: bool) -> Result<Self, StorageError> {

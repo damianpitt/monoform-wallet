@@ -48,6 +48,41 @@ fn event(kind: &str, branch: u32, index: u32, height: u32, number: u8) -> Value 
         .unwrap_or_else(|| panic!("script entry"))}})
 }
 
+// Produce an authentic public-API result from bounded synthetic confirmed history.
+// Storage tests cannot construct/replace the private account binding or branches.
+pub(crate) fn complete_discovery(
+    account: &BitcoinTestnetAccount,
+    used: [Option<u32>; 2],
+) -> Discovery {
+    let mut replies = start(recent(2));
+    for (branch, last) in used.into_iter().enumerate() {
+        let saved = [account.next_receive, account.next_change][branch];
+        let next = saved.max(last.map_or(0, |index| index + 1));
+        let end = (next + GAP).div_ceil(GAP) * GAP;
+        assert!(end <= 200, "bounded public fixture only");
+        for from in (0..end).step_by(GAP as usize) {
+            if let Some(index) = last.filter(|index| (from..from + GAP).contains(index)) {
+                let scripts = scripts(account, branch as u32, index, index)
+                    .unwrap_or_else(|_| panic!("public fixture script"));
+                let script = scripts.keys().next().unwrap_or_else(|| panic!("script"));
+                replies.push(ok(scan(0, 2, vec![hash(2)])));
+                replies.push(ok(json!({"activity":[{"type":"receive", "height":1,
+                    "blockhash":hash(2), "output_spk":{"hex":script}}]})));
+                replies.push(ok(json!(hash(2))));
+            } else {
+                replies.push(empty());
+            }
+        }
+    }
+    replies.extend(finish());
+    let (client, _directory, server) = mock(replies);
+    let result = client
+        .discover(account, DiscoveryLimits::default())
+        .unwrap_or_else(|_| panic!("complete public fixture discovery"));
+    calls(server);
+    result
+}
+
 #[test]
 fn empty_history_covers_both_branches_without_changing_saved_state() {
     let account = fixture();
@@ -59,9 +94,9 @@ fn empty_history_covers_both_branches_without_changing_saved_state() {
     let result = client
         .discover(&account, DiscoveryLimits::default())
         .unwrap_or_else(|_| panic!("complete synthetic discovery"));
-    assert_eq!(result.anchor_height, 2);
-    assert_eq!(result.anchor_hash, hash(1));
-    for branch in [result.receive, result.change] {
+    assert_eq!(result.anchor_height(), 2);
+    assert_eq!(result.anchor_hash(), hash(1));
+    for branch in [result.receive(), result.change()] {
         assert_eq!(branch.examined, 20);
         assert_eq!(branch.last_used, None);
         assert_eq!(branch.next_index, 0);
@@ -109,12 +144,12 @@ fn fully_spent_history_extends_both_gap_limits_and_never_uses_balance() {
     let result = client
         .discover(&account, DiscoveryLimits::default())
         .unwrap_or_else(|_| panic!("spent outputs still count as usage"));
-    assert_eq!(result.receive.last_used, Some(3));
-    assert_eq!(result.receive.next_index, 4);
-    assert_eq!(result.change.last_used, Some(5));
-    assert_eq!(result.change.next_index, 6);
-    assert_eq!(result.receive.examined, 40);
-    assert_eq!(result.change.examined, 40);
+    assert_eq!(result.receive().last_used, Some(3));
+    assert_eq!(result.receive().next_index, 4);
+    assert_eq!(result.change().last_used, Some(5));
+    assert_eq!(result.change().next_index, 6);
+    assert_eq!(result.receive().examined, 40);
+    assert_eq!(result.change().examined, 40);
     assert_eq!(account.encode_public_state(), before);
     for request in calls(server) {
         assert!(matches!(
@@ -152,10 +187,10 @@ fn saved_counters_require_twenty_unused_addresses_beyond_them() {
     let result = client
         .discover(&account, limits)
         .unwrap_or_else(|_| panic!("saved cursors"));
-    assert_eq!(result.receive.examined, 43);
-    assert_eq!(result.receive.next_index, 23);
-    assert_eq!(result.change.examined, 40);
-    assert_eq!(result.change.next_index, 1);
+    assert_eq!(result.receive().examined, 43);
+    assert_eq!(result.receive().next_index, 23);
+    assert_eq!(result.change().examined, 40);
+    assert_eq!(result.change().next_index, 1);
     assert_eq!(account.encode_public_state(), before);
     let requests = calls(server);
     assert_eq!(requests[5]["params"][1][0]["range"], json!([40, 42]));
@@ -174,8 +209,8 @@ fn false_positive_filters_are_not_activity() {
     let result = client
         .discover(&fixture(), DiscoveryLimits::default())
         .unwrap_or_else(|_| panic!("filter false positive"));
-    assert_eq!(result.receive.last_used, None);
-    assert_eq!(result.receive.examined, 20);
+    assert_eq!(result.receive().last_used, None);
+    assert_eq!(result.receive().examined, 20);
     calls(server);
 }
 
@@ -370,9 +405,9 @@ fn latest_usage_resets_the_gap_across_address_batches() {
     let result = client
         .discover(&fixture(), DiscoveryLimits::default())
         .unwrap_or_else(|_| panic!("gap reset"));
-    assert_eq!(result.receive.last_used, Some(39));
-    assert_eq!(result.receive.next_index, 40);
-    assert_eq!(result.receive.examined, 60);
+    assert_eq!(result.receive().last_used, Some(39));
+    assert_eq!(result.receive().next_index, 40);
+    assert_eq!(result.receive().examined, 60);
     calls(server);
 }
 
@@ -464,8 +499,8 @@ fn chain_growth_keeps_original_anchor_and_block_chunks_are_bounded() {
     let result = client
         .discover(&fixture(), DiscoveryLimits::default())
         .unwrap_or_else(|_| panic!("growing chain"));
-    assert_eq!(result.anchor_height, 4096);
-    assert_eq!(result.anchor_hash, hash(1));
+    assert_eq!(result.anchor_height(), 4096);
+    assert_eq!(result.anchor_hash(), hash(1));
     let requests = calls(server);
     for call in &requests[3..7] {
         assert_eq!(call["method"], "scanblocks");

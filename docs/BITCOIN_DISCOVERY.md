@@ -53,10 +53,11 @@ saved issued-address prefix. Batches can conservatively examine extra addresses.
 Any later usage resets the stopping target. A counter is never reduced or wrapped.
 
 Success returns the pinned height/hash and both branches' examined counts, highest
-used index and recommended next index. It is a transient recommendation only;
-applying it needs a separately reviewed atomic storage/orchestration operation.
-In particular, discovery must not overwrite a higher counter issued concurrently.
-Failure returns **no partial recommendation**. Counters stay untouched on every path.
+used index and recommended next index through read-only accessors. It remains a
+transient recommendation until an explicit
+[protected storage application](BITCOIN_DISCOVERY_STORAGE.md) checks the full bound
+account and merges counters upward. Discovery itself changes no counters; failure
+returns **no partial recommendation**. A later reservation is never overwritten.
 
 The gap is a discovery policy, not proof there are no later funds. Seed-only
 recovery can miss activity beyond an unused gap. Unused addresses issued without
@@ -133,5 +134,7 @@ and retains its nine-package optional dependency growth (450 to 459).
 Separate [anchored UTXO observations and exact satoshi balances](BITCOIN_UTXOS.md)
 are now implemented without treating those balances as evidence of complete history.
 Discovery and observation reuse one bounded RPC helper; discovery's error mapping,
-pruned-history policy and stopping rules remain unchanged. Persistence of discovery
-recommendations, mempool reconciliation and UI integration remain gated.
+pruned-history policy and stopping rules remain unchanged. Separate
+[mempool reconciliation](BITCOIN_MEMPOOL.md) and
+[protected counter application](BITCOIN_DISCOVERY_STORAGE.md) are now implemented.
+Full observation caching and UI integration remain gated.

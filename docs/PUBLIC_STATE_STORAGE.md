@@ -43,15 +43,20 @@ deleting/replacing it undermines cooperative locking.
 - `PublicStateStore::open(path)`: verifies and, when necessary, finalizes an interrupted
   commit. Missing/unavailable keys or mismatched files fail closed.
 - `descriptors()`: returns the persisted account's public watch-only descriptors.
+- `public_account()`: returns an owned, privacy-sensitive watch-only snapshot with
+  saved counters. Editing that snapshot does not modify the store.
 - `reserve_receive_address()` / `reserve_change_address()`: derive one address,
   persist its advanced counter, and return the address **only after commit succeeds**.
+- `apply_discovery(&result)` (`core-rpc`): matches the complete account bound to a
+  successful discovery, merges both counters upward and saves them atomically.
 
 The exclusive nonblocking OS file lock is held for the store's entire lifetime.
 Another instance/process gets `Busy`; dropping the store releases the lock. There is
 no general save/reset method capable of silently replacing the account or lowering
 counters. An application must use reservation, not the standalone in-memory address
-methods, when issuing persisted-wallet addresses. Discovery/recovery reconciliation
-and account verification against a future signing vault are still separate work.
+methods, when issuing persisted-wallet addresses.
+[Discovery counter application](BITCOIN_DISCOVERY_STORAGE.md) is now implemented;
+account verification against a future signing vault remains separate work.
 
 ## Encrypted file and OS credential
 
@@ -83,13 +88,15 @@ the recovery phrase. OS write acknowledgement plus an exact read-back is require
 ## Commit and interruption recovery
 
 1. Load and authenticate the current file against its OS marker while holding the lock.
-2. Derive an address and advance its counter locally; do not expose the address yet.
+2. Prepare an address reservation or verified upward-only discovery merge locally;
+   do not expose an uncommitted address or acknowledge the application yet.
 3. Write encrypted bytes to `public-state.pending` with exclusive creation. Flush
    the file and directory. Only a prior bounded, private staging artifact may be removed.
 4. Record the pending file's hash in the OS credential, retaining the prior committed hash.
 5. Atomically rename the staging file over the final file and flush the directory.
 6. Finalize the OS committed hash and clear the pending hash; verify the OS read-back.
-7. Only now return the address. Any failure returns an opaque error, not the address.
+7. Only now return the address or acknowledge application. Failure returns an opaque
+   error; it never exposes an uncommitted address and may require commit recovery.
 
 | State on reopening | Recovery |
 |---|---|
