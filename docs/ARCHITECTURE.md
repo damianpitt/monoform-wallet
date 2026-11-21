@@ -88,10 +88,17 @@ uncertain application from an acknowledged commit that exceeds the deadline.
 
 The opt-in [watch-only desktop](WATCH_ONLY_DESKTOP.md) obtains disclosure consent
 for two explicit local folders and opens the store inside a single worker thread.
-Only aggregate amounts, height, time or typed failure cross back to the UI. Paths,
+Refresh returns only aggregate amounts, height, time or typed failure to the UI. Paths,
 consent and observations are not persisted. Editing either folder revokes consent
 and clears results; a refresh clears prior values and locks inputs until completion.
-No startup queries, automatic retries, account creation or secret entry are enabled.
+No startup queries, automatic retries or secret entry are enabled.
+
+Explicit [watch-only setup](WATCH_ONLY_SETUP.md) reads a bounded private export file
+on that worker and returns only a canonical validated public record for review.
+Creation requires separate approval bound to the reviewed snapshot and destination;
+it reparses that snapshot without rereading the source. It never contacts Core or
+overwrites final/staged state or OS credentials. Full public records in the UI remain
+privacy-sensitive; checksum/shape validation establishes neither ancestry nor ownership.
 
 ### EVM networks and assets
 

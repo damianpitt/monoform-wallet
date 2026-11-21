@@ -76,6 +76,32 @@ fn fixture() -> (TempDir, PublicStateStore, MemoryCredential) {
     (directory, store, credential)
 }
 
+#[test]
+fn creation_preserves_a_staged_record_without_an_os_marker() {
+    let directory = TempDir::new().unwrap_or_else(|_| panic!("public fixture"));
+    let credential = MemoryCredential::default();
+    let path = directory.path().join("wallet");
+    let store = connected(&path, credential.clone()).unwrap_or_else(|_| panic!("fixture store"));
+    write_artifact(&path.join(PENDING), b"MFS1-interrupted-public-fixture");
+    assert_eq!(
+        store.initialize(&account()),
+        Err(StorageError::AlreadyExists)
+    );
+    assert_eq!(
+        store.read_file(PENDING).ok().flatten().as_deref(),
+        Some(b"MFS1-interrupted-public-fixture".as_slice())
+    );
+    assert!(!path.join(STATE).exists());
+    assert_eq!(
+        credential
+            .0
+            .lock()
+            .unwrap_or_else(|_| panic!("fixture lock"))
+            .writes,
+        0
+    );
+}
+
 fn write_artifact(path: &Path, bytes: &[u8]) {
     let mut file = fs::OpenOptions::new()
         .write(true)

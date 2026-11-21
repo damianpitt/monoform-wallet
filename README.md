@@ -78,10 +78,13 @@ and refresh view on macOS/Linux:
 cargo run --locked --features desktop,core-rpc
 ```
 
-The connected edition requires an **existing protected testnet4 account** and a
-configured local Bitcoin Core node. Account creation/import is not yet exposed in
-the interface. It starts with empty folder paths and unchecked disclosure consent;
-only an explicit Refresh starts work. See [Watch-only desktop](docs/WATCH_ONLY_DESKTOP.md).
+The connected edition can open an existing protected testnet4 account or
+[set one up from a validated public export](docs/WATCH_ONLY_SETUP.md). Setup is
+offline: review the complete public record and counters, then explicitly approve
+protected storage creation. Recovery phrases and private keys are not accepted.
+A configured local Bitcoin Core node and separate disclosure consent are required
+for Refresh. It starts with empty paths and unchecked consent; there are no startup
+queries. See [Watch-only desktop](docs/WATCH_ONLY_DESKTOP.md).
 
 The default build contains the offline core and protected public-state storage.
 The `desktop` feature adds the interface; `core-rpc` separately adds the read-only
@@ -91,7 +94,7 @@ known public advisories and remaining release gates. The subsequent
 [dependency remediation](docs/DEPENDENCY_REMEDIATION.md) upgrades the crypto stack
 and adds automated advisory/license/source checks with explicit maintenance exceptions.
 
-An offline-only BIP39 seed core exists, but there is no seed-entry UI or wallet-import
+An offline-only BIP39 seed core exists, but there is no seed-entry UI or seed-import
 path. It must not be used with real funds before vault, derivation, and independent
 review gates pass.
 
@@ -120,8 +123,9 @@ An explicit [watch-only refresh](docs/BITCOIN_REFRESH.md) now joins protected st
 complete discovery and fresh confirmed/pending observations under one budget. It
 requires matching chain anchors before saving counters and reports uncertain or
 late commits explicitly. The desktop now uses this operation on a worker thread and
-shows exact BTC totals and observation age. Watch-only account setup from validated
-public exports is the next module; seed entry and signing remain gated.
+shows exact BTC totals and observation age. Watch-only setup now accepts the existing
+Monoform version-1 public export format. Next is a protected testnet receive flow
+with discovery and gap-limit safeguards; seed entry and signing remain gated.
 
 Linux builds also require the D-Bus development library (`libdbus-1-dev` on Debian/
 Ubuntu). Storage needs an existing persistent Secret Service provider in the user's

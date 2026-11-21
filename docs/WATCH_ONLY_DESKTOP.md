@@ -1,8 +1,9 @@
 # Explicit watch-only desktop — 2026-11-21
 
 The macOS/Linux desktop can open an **existing protected Bitcoin testnet4 account**
-and run one bounded watch-only refresh at a time. Account creation/import, seed
-entry, signing, mainnet and other chains are not implemented in this screen.
+and run one bounded watch-only refresh at a time. The subsequent
+[watch-only setup module](WATCH_ONLY_SETUP.md) adds explicit creation from public
+exports. Seed entry, signing, mainnet and other chains remain unimplemented.
 
 ```sh
 cargo run --locked --features desktop,core-rpc
@@ -47,7 +48,7 @@ The standard-library worker constructs and owns `PublicStateStore` inside its
 thread; no non-`Send` OS credential or store handle crosses threads. It calls the
 existing [bounded refresh](BITCOIN_REFRESH.md) with default limits. Only confirmed,
 projected and immature integer amounts, height and observation time cross a bounded
-one-result channel. Full account keys, descriptors, histories and OS key material
+one-result channel during refresh. Full account keys, descriptors, histories and OS key material
 are dropped with the worker's store/observation. No new logging, serialization,
 persistence or general task framework is introduced.
 
@@ -66,6 +67,9 @@ queries. Screen, clipboard/accessibility services and same-user memory remain
 privacy boundaries; a worker thread is not process isolation.
 
 ## Verification and audit cost
+
+These counts describe the initial desktop checkpoint `649296f`; the subsequent
+[setup module](WATCH_ONLY_SETUP.md) reports its additional code and checks separately.
 
 Seven new tests cover consent and bounded paths, single-worker/result handling,
 real worker failure before any credential/node access, exact integer display,
@@ -92,5 +96,6 @@ features are added: **16 production direct names and 473 lockfile entries** rema
 Native accessibility, Glow, Wayland and X11 are retained. Existing accessibility
 maintenance exceptions still expire on 2026-12-01 UTC.
 
-Next: narrow watch-only account setup from validated public exports, using the
-existing codec and protected store without accepting recovery phrases or private keys.
+The subsequent [setup module](WATCH_ONLY_SETUP.md) implements reviewed public imports
+without recovery phrases or private keys. Its verification and audit cost are
+recorded separately. Next is a protected receive flow with discovery and gap-limit safeguards.

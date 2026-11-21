@@ -1,14 +1,16 @@
 //! Synthetic UI state only; no real accounts, cookies, credentials or network node.
 use super::*;
 
-fn balance() -> Balance {
-    Balance {
+mod setup;
+
+fn balance() -> Completion {
+    Completion::Balance(Balance {
         confirmed: 1,
         projected: 2,
         immature: 0,
         height: 102,
         observed_at: SystemTime::now(),
-    }
+    })
 }
 
 fn configured() -> MonoformApp {
@@ -22,11 +24,11 @@ fn configured() -> MonoformApp {
 #[test]
 fn explicit_consent_and_bounded_absolute_paths_are_required() {
     let mut app = configured();
-    assert!(!app.can_refresh());
-    app.start(&egui::Context::default());
+    assert!(!app.can_start(Action::Refresh));
+    app.start(&egui::Context::default(), Action::Refresh);
     assert!(app.pending.is_none());
     app.consent = true;
-    assert!(app.can_refresh());
+    assert!(app.can_start(Action::Refresh));
     for invalid in [
         "".to_owned(),
         "relative/path".into(),
@@ -35,9 +37,9 @@ fn explicit_consent_and_bounded_absolute_paths_are_required() {
         format!("/{}", "x".repeat(4096)),
     ] {
         app.wallet = invalid;
-        assert!(!app.can_refresh());
+        assert!(!app.can_start(Action::Refresh));
     }
-    assert!(valid_folder("/public fixture/account ")); // Do not silently trim paths.
+    assert!(valid_path("/public fixture/account ")); // Do not silently trim paths.
 }
 
 #[test]
@@ -46,8 +48,8 @@ fn only_one_job_runs_and_failed_or_disconnected_workers_replace_old_data() {
     app.consent = true;
     let (send, receive) = mpsc::sync_channel(1);
     app.pending = Some(receive);
-    assert!(!app.can_refresh());
-    app.start(&egui::Context::default());
+    assert!(!app.can_start(Action::Refresh));
+    app.start(&egui::Context::default(), Action::Refresh);
     assert!(app.pending.is_some());
     assert!(send.send(Ok(balance())).is_ok());
     app.poll();
@@ -83,7 +85,7 @@ fn real_worker_returns_missing_account_error_and_clears_previous_balance() {
         .into_owned();
     app.consent = true;
     app.outcome = Some(Ok(balance()));
-    app.start(&egui::Context::default());
+    app.start(&egui::Context::default(), Action::Refresh);
     assert!(app.outcome.is_none());
     assert!(app.pending.is_some());
     let deadline = std::time::Instant::now() + Duration::from_secs(5);
@@ -187,27 +189,39 @@ fn editing_either_folder_revokes_consent_and_discards_old_figures() {
 
 #[test]
 fn folder_edits_are_disabled_until_the_current_worker_finishes() {
-    let context = egui::Context::default();
-    let mut app = configured();
-    app.consent = true;
-    let mut first = context.run_ui(Default::default(), |ui| app.content(ui));
-    first.textures_delta.clear();
-    let (send, receive) = mpsc::sync_channel(1);
-    app.pending = Some(receive);
-    let before = app.node.clone();
-    context.memory_mut(|memory| memory.request_focus(egui::Id::new("node-folder")));
-    let mut busy = context.run_ui(
-        egui::RawInput {
-            events: vec![egui::Event::Text("-changed".into())],
-            ..Default::default()
-        },
-        |ui| app.content(ui),
-    );
-    busy.textures_delta.clear();
-    assert_eq!(app.node, before);
-    assert!(app.consent);
-    assert!(app.pending.is_some());
-    assert!(send.send(Ok(balance())).is_ok());
-    app.poll();
-    assert!(app.pending.is_none());
+    for (setup, id) in [
+        (false, "node-folder"),
+        (false, "account-folder"),
+        (true, "export-file"),
+        (true, "account-folder"),
+    ] {
+        let context = egui::Context::default();
+        let mut app = configured();
+        app.setup = setup;
+        app.export = "/public-fixture/export".into();
+        app.consent = true;
+        let mut first = context.run_ui(Default::default(), |ui| app.content(ui));
+        first.textures_delta.clear();
+        let (send, receive) = mpsc::sync_channel(1);
+        app.pending = Some(receive);
+        let before = (app.wallet.clone(), app.node.clone(), app.export.clone());
+        context.memory_mut(|memory| memory.request_focus(egui::Id::new(id)));
+        let mut busy = context.run_ui(
+            egui::RawInput {
+                events: vec![egui::Event::Text("-changed".into())],
+                ..Default::default()
+            },
+            |ui| app.content(ui),
+        );
+        busy.textures_delta.clear();
+        assert_eq!(
+            (app.wallet.clone(), app.node.clone(), app.export.clone()),
+            before
+        );
+        assert!(app.consent);
+        assert!(app.pending.is_some());
+        assert!(send.send(Ok(balance())).is_ok());
+        app.poll();
+        assert!(app.pending.is_none());
+    }
 }

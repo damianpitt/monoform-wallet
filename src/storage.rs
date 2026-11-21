@@ -1,4 +1,4 @@
-//! Protected testnet4 public state only: no seed storage, signing or UI integration.
+//! Protected testnet4 public state only: no seed storage or signing.
 use crate::{BitcoinTestnetAccount, BitcoinTestnetDescriptors};
 use bitcoin_hashes::{Hash, sha256};
 use chacha20poly1305::{
@@ -229,7 +229,12 @@ impl PublicStateStore {
     }
 
     fn initialize(&self, account: &BitcoinTestnetAccount) -> Result<(), StorageError> {
-        if self.read_file(STATE)?.is_some() || self.credential.read()?.is_some() {
+        // An interrupted first creation may have only a staged record. Never discard
+        // it through creation; reopening is the only recovery path.
+        if self.read_file(STATE)?.is_some()
+            || self.read_file(PENDING)?.is_some()
+            || self.credential.read()?.is_some()
+        {
             return Err(StorageError::AlreadyExists);
         }
         // OS record: key[0..32], committed ciphertext hash[32..64], pending hash[64..96].

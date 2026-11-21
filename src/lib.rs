@@ -1,5 +1,5 @@
 //! Offline recovery-seed core; local read-only networking requires `core-rpc`.
-//! The desktop UI does not call this library yet.
+//! The opt-in desktop uses only public watch-only state; secret entry stays gated.
 
 #[cfg(all(feature = "core-rpc", any(target_os = "macos", target_os = "linux")))]
 pub mod core_rpc;

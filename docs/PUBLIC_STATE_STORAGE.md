@@ -5,7 +5,7 @@
 This is an offline, **public Bitcoin testnet4 state** store. It persists an account
 key, origin fingerprint, and address counters, never a mnemonic, BIP39 seed, private
 key, or signing object. The opt-in [watch-only desktop](WATCH_ONLY_DESKTOP.md) opens
-existing stores inside a worker; the storage module itself adds no network calls.
+or explicitly creates stores inside a worker; the storage module itself adds no network calls.
 
 | Platform | Credential provider | Policy |
 |---|---|---|
@@ -40,7 +40,7 @@ deleting/replacing it undermines cooperative locking.
 ## Minimal public API
 
 - `PublicStateStore::create(path, account)`: explicit initialization; refuses existing
-  encrypted state or an existing OS credential. It never silently resets either.
+  final/staged encrypted state or an OS credential. It never silently resets them.
 - `PublicStateStore::open(path)`: verifies and, when necessary, finalizes an interrupted
   commit. Missing/unavailable keys or mismatched files fail closed.
 - `descriptors()`: returns the persisted account's public watch-only descriptors.

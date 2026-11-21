@@ -76,7 +76,8 @@ a hardware monotonic counter. Missing/locked credentials fail closed. Flush requ
 and OS read-back do not certify power-loss durability. Migration and restoring both
 an old state file and its OS marker need a separate recovery design. See
 [Storage protocol and release gates](PUBLIC_STATE_STORAGE.md). Seed storage remains
-disabled. The opt-in desktop opens only existing protected watch-only accounts.
+disabled. The opt-in desktop opens protected watch-only accounts or explicitly
+creates one from a reviewed public export.
 
 Explicit [discovery application](BITCOIN_DISCOVERY_STORAGE.md) binds complete results
 to the full extended account key and origin, then reloads and merges counters upward
@@ -121,10 +122,20 @@ The [watch-only desktop](WATCH_ONLY_DESKTOP.md) requires unchecked disclosure co
 for explicit account/node folders. Folder edits revoke consent and discard old
 figures; inputs are locked while a worker runs, and failed refreshes replace prior
 balances. A worker opens and drops the store and detailed observations; the UI
-receives aggregate amounts, height, observation time or static errors. These public
+receives aggregate amounts, height, observation time or static errors for refresh. These public
 values and paths remain privacy-sensitive in process memory, on screen and through
 accessibility/clipboard services; no process isolation is claimed. OS authorization
 may outlast the network deadline. Closing the app is not a cancellation guarantee.
+
+[Watch-only setup](WATCH_ONLY_SETUP.md) accepts only a bounded, private, user-owned
+regular file and validates the canonical testnet4 record before any destination or
+credential access. Only regenerated public text reaches review; the bounded raw
+buffer is zeroized even on rejection. Checksum and key-shape checks do not authenticate
+ownership, ancestry or counter freshness. Separate approval follows full-record review;
+path edits discard it, and creation uses that exact snapshot even if the source changes.
+No automatic network query or address issuance follows import. The original export
+remains plaintext and privacy-sensitive. Existing final/staged state and credentials
+are preserved; uncertain creation requires recovery, never automatic overwrite/reset.
 
 ## Review cadence
 

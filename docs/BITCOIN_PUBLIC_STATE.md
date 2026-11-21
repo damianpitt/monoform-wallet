@@ -6,7 +6,8 @@
 `BitcoinTestnetAccount::from_public_state()` restores a watch-only account and resumes
 both address counters without a recovery phrase. Neither method writes files, encrypts
 data, contacts a node, or enables signing. The opt-in
-[watch-only desktop](WATCH_ONLY_DESKTOP.md) opens existing protected accounts.
+[watch-only desktop](WATCH_ONLY_DESKTOP.md) opens protected accounts or
+[sets one up from a reviewed public export](WATCH_ONLY_SETUP.md).
 
 Version 1 selects **Bitcoin testnet4**, BIP84 account `m/84'/1'/0'`, receiving branch
 `0`, and change branch `1`. The old offline address fixtures remain unchanged. A `tb1`

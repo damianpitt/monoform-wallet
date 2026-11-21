@@ -41,7 +41,8 @@ Dates are intentionally absent. Security gates, not launch pressure, advance a p
 - [x] Protected atomic application of full-account-bound discovery recommendations
 - [x] Bounded watch-only refresh joining protected state, discovery and balances
 - [x] Explicit watch-only desktop connection, refresh/status and disclosure consent
-- [ ] Watch-only desktop account setup from validated public exports
+- [x] Watch-only desktop account setup from validated public exports
+- [ ] Protected testnet receive flow with discovery and gap-limit safeguards
 - [ ] Receive, coin-aware send, fee selection, and transaction review
 - [ ] Encrypted local keystore using operating-system facilities
 - [ ] Memory-zeroization tests and secret-redaction tests
@@ -58,8 +59,9 @@ Public-state format and the pending storage/backend boundaries are documented in
 [`docs/BITCOIN_PUBLIC_STATE.md`](docs/BITCOIN_PUBLIC_STATE.md). The codec is in-memory
 only; [protected storage](docs/PUBLIC_STATE_STORAGE.md) is a separate implemented
 module, not an encrypted seed vault or network backend. The opt-in
-[watch-only desktop](docs/WATCH_ONLY_DESKTOP.md) opens existing protected accounts;
-account setup, seed entry and signing remain unimplemented.
+[watch-only desktop](docs/WATCH_ONLY_DESKTOP.md) opens protected accounts or explicitly
+[creates one from a reviewed public export](docs/WATCH_ONLY_SETUP.md). Seed entry and
+signing remain unimplemented.
 
 The separate opt-in [Core backend](docs/BITCOIN_CORE_BACKEND.md) now verifies chain
 identity and descriptor compatibility, with separate bounded
