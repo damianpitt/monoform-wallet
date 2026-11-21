@@ -81,6 +81,11 @@ remain transient. Spendable balances, a transaction ledger, the encrypted seed v
 and wallet UI integration remain unimplemented. See the [backend boundary](BITCOIN_CORE_BACKEND.md),
 [codec](BITCOIN_PUBLIC_STATE.md) and [storage protocol](PUBLIC_STATE_STORAGE.md).
 
+One explicit [watch-only refresh](BITCOIN_REFRESH.md) coordinates these modules with
+a shared network budget, matching history/balance anchors and deferred atomic
+counter application. It returns no partial balance on failure and distinguishes
+uncertain application from an acknowledged commit that exceeds the deadline.
+
 ### EVM networks and assets
 
 Ethereum and a future ZK rollup reuse address, signing, transaction-envelope, and

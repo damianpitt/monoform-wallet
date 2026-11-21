@@ -9,23 +9,25 @@ pub(super) struct RpcBudget<'a> {
 }
 
 impl RpcBudget<'_> {
+    pub(super) fn remaining_time(&self) -> Result<Duration, CoreError> {
+        DEADLINE
+            .checked_sub(self.started.elapsed())
+            .filter(|left| !left.is_zero())
+            .ok_or(CoreError::Deadline)
+    }
+
     pub(super) fn call<T: DeserializeOwned>(
         &mut self,
         method: &'static str,
         params: serde_json::Value,
     ) -> Result<T, CoreError> {
-        let left = DEADLINE
-            .checked_sub(self.started.elapsed())
-            .filter(|left| !left.is_zero())
-            .ok_or(CoreError::Deadline)?;
+        let left = self.remaining_time()?;
         if self.remaining == 0 {
             return Err(CoreError::RequestLimit);
         }
         self.remaining -= 1;
         let result = self.core.rpc_timeout(method, params, left.min(TIMEOUT));
-        if self.started.elapsed() >= DEADLINE {
-            return Err(CoreError::Deadline);
-        }
+        self.remaining_time()?;
         result
     }
 

@@ -110,6 +110,13 @@ Local-pool omissions and restart/restore races remain trust limits. UI integrati
 full scan-record caching and signing remain disabled. See
 [Core backend limits and tests](BITCOIN_CORE_BACKEND.md).
 
+An explicit [watch-only refresh](BITCOIN_REFRESH.md) shares one work budget across
+discovery and observation, requires matching anchors, and defers counter application
+until those checks pass. Commit errors remain uncertain; acknowledged but late
+commits have a separate error. OS calls cannot be forcibly cancelled, and the
+chain/pool can change during a final store write. Saving counters and refresh success
+do not establish current spendability or complete history.
+
 ## Review cadence
 
 Update this model with every signing feature, platform, network, update mechanism,

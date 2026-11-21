@@ -104,6 +104,11 @@ mempool spends/receipts, including descendants, and reject changing snapshots.
 No UI networking is enabled; the default build stays offline.
 Networking requires the explicit `core-rpc` feature.
 
+An explicit [watch-only refresh](docs/BITCOIN_REFRESH.md) now joins protected state,
+complete discovery and fresh confirmed/pending observations under one budget. It
+requires matching chain anchors before saving counters and reports uncertain or
+late commits explicitly. Desktop connection and disclosure consent remain the next step.
+
 Linux builds also require the D-Bus development library (`libdbus-1-dev` on Debian/
 Ubuntu). Storage needs an existing persistent Secret Service provider in the user's
 desktop session; there is no plaintext fallback when it is unavailable.

@@ -33,7 +33,7 @@ fn parse(events: Vec<Value>) -> Result<Activity, CoreError> {
         serde_json::from_str(&body).map_err(|_| CoreError::InvalidResponse)?;
     parsed.result.ok_or(CoreError::InvalidResponse)
 }
-fn events() -> Vec<Value> {
+pub(crate) fn events() -> Vec<Value> {
     // Child first: Core event order is not a topological-order contract.
     vec![
         spend(5, 0, 4, 0, 1, 0, "0.99999000"),
@@ -79,7 +79,7 @@ fn projection(
         &scripts,
     )
 }
-fn stable(ids: &[u8], events: Vec<Value>, has_coin: bool) -> Vec<(u16, String)> {
+pub(crate) fn stable(ids: &[u8], events: Vec<Value>, has_coin: bool) -> Vec<(u16, String)> {
     let mut replies = vec![ok(recent(102, 1)), ok(json!(GENESIS))];
     replies.extend(pool_replies(ids, 7));
     replies.extend(start());

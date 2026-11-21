@@ -112,6 +112,6 @@ The first macOS CI attempt was cancelled before checkout by GitHub's scheduled
 The follow-up CI checkpoint selects the supported `macos-15` ARM runner. This
 changes the verification host, not the wallet format or a declared minimum app OS.
 
-Next: one explicit, bounded watch-only refresh flow that joins protected state,
-discovery and balance observations before desktop integration. It must preserve
-typed failures, explicit query consent and the existing signing/seed-entry gates.
+The following module implements [one bounded watch-only refresh](BITCOIN_REFRESH.md)
+joining protected state, discovery and balance observations before desktop integration.
+Typed failures, explicit query consent and signing/seed-entry gates remain in force.

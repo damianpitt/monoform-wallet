@@ -54,7 +54,20 @@ pub(crate) fn complete_discovery(
     account: &BitcoinTestnetAccount,
     used: [Option<u32>; 2],
 ) -> Discovery {
-    let mut replies = start(recent(2));
+    let (client, _directory, server) = mock(discovery_replies(account, used, 2));
+    let result = client
+        .discover(account, DiscoveryLimits::default())
+        .unwrap_or_else(|_| panic!("complete public fixture discovery"));
+    calls(server);
+    result
+}
+
+pub(crate) fn discovery_replies(
+    account: &BitcoinTestnetAccount,
+    used: [Option<u32>; 2],
+    height: u32,
+) -> Vec<(u16, String)> {
+    let mut replies = start(recent(height));
     for (branch, last) in used.into_iter().enumerate() {
         let saved = [account.next_receive, account.next_change][branch];
         let next = saved.max(last.map_or(0, |index| index + 1));
@@ -65,22 +78,17 @@ pub(crate) fn complete_discovery(
                 let scripts = scripts(account, branch as u32, index, index)
                     .unwrap_or_else(|_| panic!("public fixture script"));
                 let script = scripts.keys().next().unwrap_or_else(|| panic!("script"));
-                replies.push(ok(scan(0, 2, vec![hash(2)])));
+                replies.push(ok(scan(0, height, vec![hash(2)])));
                 replies.push(ok(json!({"activity":[{"type":"receive", "height":1,
                     "blockhash":hash(2), "output_spk":{"hex":script}}]})));
                 replies.push(ok(json!(hash(2))));
             } else {
-                replies.push(empty());
+                replies.push(ok(scan(0, height, vec![])));
             }
         }
     }
-    replies.extend(finish());
-    let (client, _directory, server) = mock(replies);
-    let result = client
-        .discover(account, DiscoveryLimits::default())
-        .unwrap_or_else(|_| panic!("complete public fixture discovery"));
-    calls(server);
-    result
+    replies.extend(start(recent(height)));
+    replies
 }
 
 #[test]

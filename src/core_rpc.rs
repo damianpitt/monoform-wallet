@@ -2,6 +2,7 @@
 mod budget;
 mod discovery;
 mod mempool;
+mod refresh;
 mod utxos;
 use crate::{BitcoinTestnetAccount, bitcoin_address, bitcoin_branch};
 use base64::{Engine, engine::general_purpose::STANDARD};
@@ -13,6 +14,7 @@ pub use mempool::{
     MempoolError, MempoolIncompleteReason, MempoolObservation, PendingReceipt, PendingSpend,
     PendingSummary,
 };
+pub use refresh::{RefreshError, WatchOnlyRefresh};
 use rustix::fs::{Mode, OFlags};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::json;
@@ -356,6 +358,10 @@ struct RpcFailure {
 }
 
 #[cfg(test)]
-pub(crate) use discovery::tests::complete_discovery;
+pub(crate) use discovery::tests::{complete_discovery, discovery_replies};
+#[cfg(test)]
+pub(crate) use mempool::tests::{events as pending_events, stable as pending_replies};
+#[cfg(test)]
+pub(crate) use tests::{calls as rpc_calls, mock as mock_core};
 #[cfg(test)]
 mod tests;

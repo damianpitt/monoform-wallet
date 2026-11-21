@@ -90,32 +90,42 @@ impl CoreTestnet4 {
         account: &BitcoinTestnetAccount,
         scope: UtxoScope,
     ) -> Result<MempoolObservation, MempoolError> {
-        utxos::validate_scope(account, scope)?;
         let mut budget = Budget {
             core: self,
             remaining: 112,
             started: Instant::now(),
         };
-        let before = budget.status()?;
+        budget.reconcile_mempool(account, scope)
+    }
+}
+
+impl Budget<'_> {
+    pub(super) fn reconcile_mempool(
+        &mut self,
+        account: &BitcoinTestnetAccount,
+        scope: UtxoScope,
+    ) -> Result<MempoolObservation, MempoolError> {
+        utxos::validate_scope(account, scope)?;
+        let before = self.status()?;
         utxos::ready(&before)?;
-        let pool = budget.pool()?;
-        let confirmed = budget.observe_utxos(account, scope)?;
+        let pool = self.pool()?;
+        let confirmed = self.observe_utxos(account, scope)?;
         if confirmed.anchor_height != before.blocks || confirmed.anchor_hash != before.tip_hash {
             return Err(MempoolError::SnapshotChanged);
         }
         let scripts = utxos::scoped_scripts(account, scope)?;
-        let activity = budget.pending_activity(account, scope)?;
+        let activity = self.pending_activity(account, scope)?;
         let (receipts, spends, summary) = reconcile(&confirmed, &pool, activity, &scripts)?;
-        let after = budget.status()?;
+        let after = self.status()?;
         if after.blocks < before.blocks
-            || budget.call::<String>("getblockhash", json!([before.blocks]))? != before.tip_hash
+            || self.call::<String>("getblockhash", json!([before.blocks]))? != before.tip_hash
         {
             return Err(MempoolError::Reorg);
         }
         utxos::ready(&after)?;
         if after.blocks != before.blocks
             || after.tip_hash != before.tip_hash
-            || budget.pool()? != pool
+            || self.pool()? != pool
         {
             return Err(MempoolError::SnapshotChanged);
         }
@@ -390,4 +400,4 @@ struct Event {
 }
 
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;

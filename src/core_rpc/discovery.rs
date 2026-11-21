@@ -103,6 +103,21 @@ impl CoreTestnet4 {
         account: &BitcoinTestnetAccount,
         limits: DiscoveryLimits,
     ) -> Result<Discovery, DiscoveryError> {
+        let mut budget = Budget {
+            core: self,
+            remaining: limits.max_requests,
+            started: Instant::now(),
+        };
+        budget.discover(account, limits)
+    }
+}
+
+impl Budget<'_> {
+    pub(super) fn discover(
+        &mut self,
+        account: &BitcoinTestnetAccount,
+        limits: DiscoveryLimits,
+    ) -> Result<Discovery, DiscoveryError> {
         if !(GAP..=10_000).contains(&limits.max_addresses_per_branch)
             || limits.max_height > 1_000_000
             || !(1..=512).contains(&limits.max_requests)
@@ -117,28 +132,23 @@ impl CoreTestnet4 {
                 return Err(incomplete(IncompleteReason::AddressLimit));
             }
         }
-        let mut budget = Budget {
-            core: self,
-            remaining: limits.max_requests,
-            started: Instant::now(),
-        };
-        let anchor = budget.status()?;
+        let anchor = self.status()?;
         ready(&anchor)?;
         if anchor.blocks > limits.max_height {
             return Err(incomplete(IncompleteReason::BlockLimit));
         }
         // Pin before disclosing descriptors, then check again before returning success.
-        if budget.call::<String>("getblockhash", json!([anchor.blocks]))? != anchor.tip_hash {
+        if self.call::<String>("getblockhash", json!([anchor.blocks]))? != anchor.tip_hash {
             return Err(DiscoveryError::Reorg);
         }
         let descriptors = account
             .descriptors()
             .map_err(|_| DiscoveryError::Backend(CoreError::Derivation))?;
-        let receive = budget.branch(account, 0, &descriptors.receive, &anchor, &limits)?;
-        let change = budget.branch(account, 1, &descriptors.change, &anchor, &limits)?;
-        let after = budget.status()?;
+        let receive = self.branch(account, 0, &descriptors.receive, &anchor, &limits)?;
+        let change = self.branch(account, 1, &descriptors.change, &anchor, &limits)?;
+        let after = self.status()?;
         if after.blocks < anchor.blocks
-            || budget.call::<String>("getblockhash", json!([anchor.blocks]))? != anchor.tip_hash
+            || self.call::<String>("getblockhash", json!([anchor.blocks]))? != anchor.tip_hash
         {
             return Err(DiscoveryError::Reorg);
         }

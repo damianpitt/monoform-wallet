@@ -8,6 +8,8 @@ use tempfile::TempDir;
 
 #[cfg(feature = "core-rpc")]
 mod discovery;
+#[cfg(feature = "core-rpc")]
+mod refresh;
 
 // Public Trezor vector only; never protect real funds with these words.
 const PHRASE: &str = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art";
@@ -20,6 +22,7 @@ struct MemoryState {
     unavailable: bool,
     fail_write: Option<usize>,
     writes: usize,
+    pause_after_write: Option<usize>,
 }
 
 impl Credential for MemoryCredential {
@@ -37,6 +40,10 @@ impl Credential for MemoryCredential {
             return Err(StorageError::KeyStore);
         }
         state.data = Some(Zeroizing::new(data.to_vec()));
+        if state.pause_after_write == Some(state.writes) {
+            // Explicit ignored test of an OS call that returns after the real deadline.
+            std::thread::sleep(std::time::Duration::from_secs(61));
+        }
         Ok(())
     }
 }
@@ -460,8 +467,17 @@ fn native_store_round_trip() {
             let result = crate::core_rpc::complete_discovery(&snapshot, [Some(3), Some(5)]);
             reopened.apply_discovery(&result)?;
             drop(reopened);
-            let persisted = PublicStateStore::open(&path)?;
+            let mut persisted = PublicStateStore::open(&path)?;
             assert_eq!(counters(&persisted), (4, 6));
+            let replies = refresh::replies(&persisted.public_account()?, [Some(7), Some(8)], false);
+            let (core, _cookie, server) = crate::core_rpc::mock_core(replies);
+            assert!(
+                core.refresh_watch_only(&mut persisted, Default::default())
+                    .is_ok()
+            );
+            crate::core_rpc::rpc_calls(server);
+            drop(persisted);
+            assert_eq!(counters(&PublicStateStore::open(&path)?), (8, 9));
         }
         Ok(())
     })();

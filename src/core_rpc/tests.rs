@@ -72,7 +72,7 @@ fn request(stream: &mut TcpStream) -> serde_json::Value {
     serde_json::from_slice(&bytes).unwrap_or_else(|_| panic!("request JSON"))
 }
 
-pub(super) fn mock(
+pub(crate) fn mock(
     replies: Vec<(u16, String)>,
 ) -> (
     CoreTestnet4,
@@ -111,7 +111,7 @@ pub(super) fn mock(
     (client, directory, handle)
 }
 
-pub(super) fn calls(handle: JoinHandle<Vec<serde_json::Value>>) -> Vec<serde_json::Value> {
+pub(crate) fn calls(handle: JoinHandle<Vec<serde_json::Value>>) -> Vec<serde_json::Value> {
     handle
         .join()
         .unwrap_or_else(|_| panic!("mock server failed"))

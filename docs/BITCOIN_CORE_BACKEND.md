@@ -7,7 +7,7 @@
 and desktop demo remain offline; no UI or background polling is connected. Callers
 may explicitly apply discovery counters through the separate protected store.
 
-The public API has five operations:
+The public API has six operations:
 
 - `status()` reads chain identity and node-reported sync/tip information.
 - `verify_account(&BitcoinTestnetAccount)` checks both public descriptors and
@@ -20,6 +20,9 @@ The public API has five operations:
   address prefixes and sums exact satoshi values. See [scope and limits](BITCOIN_UTXOS.md).
 - `reconcile_mempool(&account, scope)` combines fresh confirmed UTXOs and a bounded,
   sequence-bracketed local pool overlay. See [pending projection limits](BITCOIN_MEMPOOL.md).
+- `refresh_watch_only(&mut store, limits)` joins protected state, discovery and pending
+  reconciliation with [one budget and explicit commit outcomes](BITCOIN_REFRESH.md).
+  It saves local public counters after observation checks; Core RPC remains read-only.
 
 The private RPC allowlist is exactly `getblockchaininfo`, `getblockhash`,
 `getdescriptorinfo`, `deriveaddresses`, `scanblocks` (start only),
