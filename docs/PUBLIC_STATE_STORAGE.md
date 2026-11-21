@@ -4,7 +4,8 @@
 
 This is an offline, **public Bitcoin testnet4 state** store. It persists an account
 key, origin fingerprint, and address counters, never a mnemonic, BIP39 seed, private
-key, or signing object. The demonstration UI does not call it. No network is added.
+key, or signing object. The opt-in [watch-only desktop](WATCH_ONLY_DESKTOP.md) opens
+existing stores inside a worker; the storage module itself adds no network calls.
 
 | Platform | Credential provider | Policy |
 |---|---|---|
@@ -25,7 +26,7 @@ unlocked user session. Neither platform defeats malware running as the user.
 The caller chooses an absolute path in trusted **local**, per-user application storage.
 The future application locations are `~/Library/Application Support/Monoform/bitcoin-testnet4`
 on macOS and `$XDG_DATA_HOME/monoform/bitcoin-testnet4` on Linux, with the normal
-`~/.local/share` default. Path resolution is not yet wired into the UI; no automatic
+`~/.local/share` default. The desktop accepts explicit absolute paths only; no automatic
 cloud, shared-drive, or network-filesystem storage is supported. Parent directories
 must already exist and be trusted. Creation makes only the final directory.
 

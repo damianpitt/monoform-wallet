@@ -2,8 +2,8 @@
 
 `PublicStateStore::apply_discovery(&result)` explicitly applies a complete
 `CoreTestnet4::discover` result to protected public testnet4 state. The operation
-requires `core-rpc`; it makes no network request. The default build and desktop
-demo remain offline, with no seed storage, signing or automatic refresh.
+requires `core-rpc`; it makes no network request. The default and `desktop`-only
+builds remain offline, with no seed storage, signing or automatic refresh.
 
 ## Snapshot, discover, apply
 
@@ -79,7 +79,8 @@ remain conservative even when old usage disappears. This may skip addresses, and
 the old scan may not cover the newly issued prefix/gap. Scan again to assess that
 scope; applying counters is not a freshness/completeness assertion. A consistently
 lying local node, coordinated file/OS-anchor rollback and OS compromise remain
-documented trust limits. UI disclosure consent still requires a later integration.
+documented trust limits. The subsequent [watch-only desktop](WATCH_ONLY_DESKTOP.md)
+adds disclosure consent before invoking the coordinated refresh.
 
 ## Verification and audit cost
 

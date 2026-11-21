@@ -40,7 +40,8 @@ Dates are intentionally absent. Security gates, not launch pressure, advance a p
 - [ ] Historical transaction ledger, RBF/fee-bump management and user-facing review
 - [x] Protected atomic application of full-account-bound discovery recommendations
 - [x] Bounded watch-only refresh joining protected state, discovery and balances
-- [ ] Explicit watch-only desktop connection, refresh/status and disclosure consent
+- [x] Explicit watch-only desktop connection, refresh/status and disclosure consent
+- [ ] Watch-only desktop account setup from validated public exports
 - [ ] Receive, coin-aware send, fee selection, and transaction review
 - [ ] Encrypted local keystore using operating-system facilities
 - [ ] Memory-zeroization tests and secret-redaction tests
@@ -56,14 +57,17 @@ Build/test success is not independent review or approval for real-funds use.
 Public-state format and the pending storage/backend boundaries are documented in
 [`docs/BITCOIN_PUBLIC_STATE.md`](docs/BITCOIN_PUBLIC_STATE.md). The codec is in-memory
 only; [protected storage](docs/PUBLIC_STATE_STORAGE.md) is a separate implemented
-module, not an encrypted seed vault or network backend. UI integration remains gated.
+module, not an encrypted seed vault or network backend. The opt-in
+[watch-only desktop](docs/WATCH_ONLY_DESKTOP.md) opens existing protected accounts;
+account setup, seed entry and signing remain unimplemented.
 
 The separate opt-in [Core backend](docs/BITCOIN_CORE_BACKEND.md) now verifies chain
 identity and descriptor compatibility, with separate bounded
 [confirmed-history discovery](docs/BITCOIN_DISCOVERY.md) and
 [scoped confirmed UTXO balances](docs/BITCOIN_UTXOS.md), plus separate
 [bounded pending projections](docs/BITCOIN_MEMPOOL.md). It is not a complete wallet/history backend;
-the default build and UI still make no network calls.
+the default and `desktop`-only builds still make no network calls. The combined
+desktop/backend build queries only after explicit consent and Refresh.
 
 Exit gate: test vectors pass, no mainnet endpoints exist, threat-model review is
 complete, and two maintainers approve the signing path.

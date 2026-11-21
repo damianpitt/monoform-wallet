@@ -11,7 +11,7 @@ repository = "https://github.com/damianpitt/monoform-wallet"
 [features]
 # Core builds do not need a windowing/graphics/clipboard stack.
 desktop = ["dep:eframe"]
-# Networking remains an explicit developer opt-in, never enabled by the demo UI.
+# Networking is opt-in; the combined desktop build also requires user consent.
 core-rpc = ["dep:ureq", "dep:serde", "dep:serde_json", "dep:base64", "dep:log"]
 
 [[bin]]

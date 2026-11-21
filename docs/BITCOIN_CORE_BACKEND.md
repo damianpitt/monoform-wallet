@@ -3,9 +3,11 @@
 ## Implemented scope
 
 `core_rpc::CoreTestnet4` is a blocking macOS/Linux client enabled only by the
-`core-rpc` Cargo feature. Construction does not make a request. The default build
-and desktop demo remain offline; no UI or background polling is connected. Callers
-may explicitly apply discovery counters through the separate protected store.
+`core-rpc` Cargo feature. Construction does not make a request. The default and
+`desktop`-only builds remain offline. The combined build's
+[watch-only desktop](WATCH_ONLY_DESKTOP.md) queries only after disclosure consent
+and an explicit Refresh; there is no background polling. Callers may explicitly
+apply discovery counters through the separate protected store.
 
 The public API has six operations:
 
@@ -62,8 +64,8 @@ broad RPC access; read-only restrictions belong to this client, not the credenti
 Each request has a ten-second end-to-end timeout, a 4 KiB HTTP-header limit and a
 16 KiB response-body limit. Redirects and inherited proxy settings are disabled.
 An operation makes at most two requests for status or six for account verification;
-its total time can therefore approach 20 or 60 seconds. Future UI integration must
-use a reviewed background/cancellation path, never block the UI thread. Discovery
+its total time can therefore approach 20 or 60 seconds. Desktop refresh runs on a
+worker thread; it cannot forcibly cancel OS/credential calls. Discovery
 also has a capped request count and a 60-second remaining-time deadline. The UTXO
 and mempool operations share that budget implementation and make no partial-balance claims.
 
@@ -161,5 +163,5 @@ audit costs and further gates are recorded there. Separate
 state without claiming spendability. An explicit
 [protected counter application](BITCOIN_DISCOVERY_STORAGE.md) now saves discovery
 recommendations. Spendable balances, historical monetary transaction history, full
-observation persistence, UI connection and signing remain unimplemented;
+observation persistence and signing remain unimplemented;
 compatibility/discovery checks do not satisfy those gates.

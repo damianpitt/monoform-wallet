@@ -5,7 +5,8 @@
 `BitcoinTestnetAccount::encode_public_state()` returns a canonical text record.
 `BitcoinTestnetAccount::from_public_state()` restores a watch-only account and resumes
 both address counters without a recovery phrase. Neither method writes files, encrypts
-data, contacts a node, or enables signing. The desktop UI still uses demonstration data.
+data, contacts a node, or enables signing. The opt-in
+[watch-only desktop](WATCH_ONLY_DESKTOP.md) opens existing protected accounts.
 
 Version 1 selects **Bitcoin testnet4**, BIP84 account `m/84'/1'/0'`, receiving branch
 `0`, and change branch `1`. The old offline address fixtures remain unchanged. A `tb1`
@@ -66,8 +67,8 @@ it is not a hardware monotonic counter and cannot detect a rollback of both the 
 and OS credential. Recovery handles interruptions on either side of replacement.
 Missing or unavailable credentials fail closed, never triggering automatic key reset.
 
-This text record remains the inner codec, not an encrypted seed vault. The UI is not
-connected to storage; the in-memory address API is still not a durable reservation API.
+This text record remains the inner codec, not an encrypted seed vault. The in-memory
+address API is still not a durable reservation API.
 See [OS-backed public-state storage](PUBLIC_STATE_STORAGE.md) for the complete format,
 protocol, tests, threat limits, and platform/release gates.
 
@@ -82,8 +83,7 @@ user-approved operation, never a side effect of a compatibility check.
 
 The opt-in [`core_rpc::CoreTestnet4` client](BITCOIN_CORE_BACKEND.md) now checks the
 chain name and genesis, reports bounded typed node status, and verifies public
-descriptors/addresses over cookie-authenticated loopback HTTP. It remains
-disconnected from the UI. Separate bounded
+descriptors/addresses over cookie-authenticated loopback HTTP. Separate bounded
 [confirmed-history discovery](BITCOIN_DISCOVERY.md) scans both branches, keeps saved
 cursors untouched and returns explicit incomplete/reorg errors. Default builds remain offline.
 
@@ -93,12 +93,13 @@ complete history, pending-spend reconciliation or spendability.
 
 Separate [pending reconciliation](BITCOIN_MEMPOOL.md) now combines a fresh scoped
 UTXO snapshot with a loaded, bounded local pool, using the same work budget and
-sequence/tip checks. It neither applies discovery counters nor enables the UI.
+sequence/tip checks. That standalone operation does not apply discovery counters.
 
 The separate [protected application operation](BITCOIN_DISCOVERY_STORAGE.md) now
 accepts a complete, full-account-bound discovery result and merges both counters
 upward using the existing atomic storage protocol. Raw observations stay transient;
-the codec/file formats and seed/UI boundaries are unchanged.
+the codec/file formats and seed boundaries are unchanged. The desktop now invokes
+the [coordinated refresh](BITCOIN_REFRESH.md) after explicit disclosure consent.
 
 Discovery starts at index zero for both account-0 branches. Require 20 consecutive
 addresses with no transaction history beyond both the last used address and the

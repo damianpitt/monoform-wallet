@@ -77,14 +77,21 @@ with pool IDs/sequence and chain checks, projects descendant spends without doub
 counting, and rejects changed snapshots. An explicit
 [discovery application step](BITCOIN_DISCOVERY_STORAGE.md) compares the full account,
 merges both counters upward and reuses protected atomic storage. Full observations
-remain transient. Spendable balances, a transaction ledger, the encrypted seed vault
-and wallet UI integration remain unimplemented. See the [backend boundary](BITCOIN_CORE_BACKEND.md),
+remain transient. Spendable balances, a transaction ledger and the encrypted seed vault
+remain unimplemented. See the [backend boundary](BITCOIN_CORE_BACKEND.md),
 [codec](BITCOIN_PUBLIC_STATE.md) and [storage protocol](PUBLIC_STATE_STORAGE.md).
 
 One explicit [watch-only refresh](BITCOIN_REFRESH.md) coordinates these modules with
 a shared network budget, matching history/balance anchors and deferred atomic
 counter application. It returns no partial balance on failure and distinguishes
 uncertain application from an acknowledged commit that exceeds the deadline.
+
+The opt-in [watch-only desktop](WATCH_ONLY_DESKTOP.md) obtains disclosure consent
+for two explicit local folders and opens the store inside a single worker thread.
+Only aggregate amounts, height, time or typed failure cross back to the UI. Paths,
+consent and observations are not persisted. Editing either folder revokes consent
+and clears results; a refresh clears prior values and locks inputs until completion.
+No startup queries, automatic retries, account creation or secret entry are enabled.
 
 ### EVM networks and assets
 

@@ -75,8 +75,8 @@ same-user OS access remain trusted; it provides neither Secure Enclave isolation
 a hardware monotonic counter. Missing/locked credentials fail closed. Flush requests
 and OS read-back do not certify power-loss durability. Migration and restoring both
 an old state file and its OS marker need a separate recovery design. See
-[Storage protocol and release gates](PUBLIC_STATE_STORAGE.md). Seed storage and UI
-integration remain disabled.
+[Storage protocol and release gates](PUBLIC_STATE_STORAGE.md). Seed storage remains
+disabled. The opt-in desktop opens only existing protected watch-only accounts.
 
 Explicit [discovery application](BITCOIN_DISCOVERY_STORAGE.md) binds complete results
 to the full extended account key and origin, then reloads and merges counters upward
@@ -106,8 +106,8 @@ no Debug representation or persistence path; only discovered account counters ca
 be explicitly merged into protected state. Bounded mempool reconciliation brackets fresh
 confirmed/pending observations with pool IDs/sequence and chain checks, rejects
 duplicates/cycles/inconsistent inputs, and never equates a projection with spendability.
-Local-pool omissions and restart/restore races remain trust limits. UI integration,
-full scan-record caching and signing remain disabled. See
+Local-pool omissions and restart/restore races remain trust limits. Full scan-record
+caching and signing remain disabled. See
 [Core backend limits and tests](BITCOIN_CORE_BACKEND.md).
 
 An explicit [watch-only refresh](BITCOIN_REFRESH.md) shares one work budget across
@@ -116,6 +116,15 @@ until those checks pass. Commit errors remain uncertain; acknowledged but late
 commits have a separate error. OS calls cannot be forcibly cancelled, and the
 chain/pool can change during a final store write. Saving counters and refresh success
 do not establish current spendability or complete history.
+
+The [watch-only desktop](WATCH_ONLY_DESKTOP.md) requires unchecked disclosure consent
+for explicit account/node folders. Folder edits revoke consent and discard old
+figures; inputs are locked while a worker runs, and failed refreshes replace prior
+balances. A worker opens and drops the store and detailed observations; the UI
+receives aggregate amounts, height, observation time or static errors. These public
+values and paths remain privacy-sensitive in process memory, on screen and through
+accessibility/clipboard services; no process isolation is claimed. OS authorization
+may outlast the network deadline. Closing the app is not a cancellation guarantee.
 
 ## Review cadence
 

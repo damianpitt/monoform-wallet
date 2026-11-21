@@ -7,10 +7,10 @@ receiving branch 0 and change branch 1. It requires an explicitly selected local
 Core 31+ node with a synchronized `blockfilterindex=1`, unpruned block/undo data,
 and a recent, non-syncing tip. Monoform does not configure, restart or synchronize
 the user's node automatically. The existing loopback/cookie/response boundaries
-remain in force, and default builds and the demo UI remain offline.
+remain in force, and default and `desktop`-only builds remain offline.
 
 Discovery sends public descriptors to the local node. They reveal the account's
-address linkage, so future UI integration must obtain consent. No seed/private
+address linkage, so the [watch-only desktop](WATCH_ONLY_DESKTOP.md) obtains consent. No seed/private
 key is sent, no Core wallet is created/imported, no balance is computed, and
 neither the account nor the protected store is modified.
 
@@ -137,4 +137,5 @@ Discovery and observation reuse one bounded RPC helper; discovery's error mappin
 pruned-history policy and stopping rules remain unchanged. Separate
 [mempool reconciliation](BITCOIN_MEMPOOL.md) and
 [protected counter application](BITCOIN_DISCOVERY_STORAGE.md) are now implemented.
-Full observation caching and UI integration remain gated.
+Full observation caching remains gated. The subsequent desktop integration uses
+explicit consent and one bounded refresh per user action.

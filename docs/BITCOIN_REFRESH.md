@@ -3,7 +3,8 @@
 `CoreTestnet4::refresh_watch_only(&mut store, limits)` joins protected public state,
 confirmed-history discovery, fresh UTXOs and pending reconciliation. It requires
 `core-rpc`, an existing testnet4 store and the user's configured local Core. It is
-an explicit developer API; desktop connection and disclosure consent remain gated.
+an explicit API, now used by the opt-in [watch-only desktop](WATCH_ONLY_DESKTOP.md)
+after disclosure consent and an explicit Refresh action.
 
 ## One budget, one account and matching anchors
 
@@ -60,8 +61,8 @@ changed. Safe retries reload/recover state and rerun observation.
 
 ## Privacy, balances and persistence
 
-Descriptors/ranges disclose address linkage to the selected local Core. Future UI
-must obtain disclosure consent before invoking the operation off the UI thread.
+Descriptors/ranges disclose address linkage to the selected local Core. The desktop
+obtains disclosure consent before invoking the operation off the UI thread.
 `WatchOnlyRefresh` has no Debug, serialization or persistence implementation.
 Confirmed totals and pending projections stay distinct exact-satoshi values,
 retaining immature-coinbase/change/self-transfer semantics. They are not spendable
@@ -100,5 +101,6 @@ feature changes: 473 locked entries and 16 production direct dependency names.
 The preceding security checkpoint `482b4a2` separately patches rustix and replaces
 the yanked executor. Accessibility exceptions retain their 2026-12-01 UTC deadline.
 
-Next: an explicit watch-only desktop connection and refresh/status view, with query
-consent, clear incomplete/error states and the existing seed/signing/mainnet gates.
+The subsequent [desktop increment](WATCH_ONLY_DESKTOP.md) adds explicit connection,
+consent, refresh/status and incomplete/error states. Account setup from validated
+public exports is next; seed/signing/mainnet gates remain in force.

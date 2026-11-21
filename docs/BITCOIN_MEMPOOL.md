@@ -114,5 +114,6 @@ production code. The preceding UTXO module was backed up separately as `7c53985`
 
 The following checkpoint implements [protected atomic application of discovery
 recommendations](BITCOIN_DISCOVERY_STORAGE.md), with complete account matching and
-monotonic counters. UI integration, seed persistence, signing
-and mainnet remain gated; these observation checks do not satisfy release review.
+monotonic counters. The subsequent [watch-only desktop](WATCH_ONLY_DESKTOP.md)
+adds explicit consent and refresh. Seed persistence, signing and mainnet remain
+gated; these observation checks do not satisfy release review.

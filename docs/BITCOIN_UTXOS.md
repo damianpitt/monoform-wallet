@@ -15,9 +15,9 @@ UTXOs were reported **within this scope**, not that the entire wallet is empty.
 No counters, discovery recommendations or protected state are written.
 
 The opt-in build feature, fixed loopback endpoint, local-cookie authentication,
-disabled proxies/redirects/logging, and strict schemas remain unchanged. The UI
-and default build stay offline. Descriptors reveal account linkage: user consent
-is required before future UI integration discloses them to the local node.
+disabled proxies/redirects/logging, and strict schemas remain unchanged. The default
+and `desktop`-only builds stay offline. Descriptors reveal account linkage: the
+opt-in [watch-only desktop](WATCH_ONLY_DESKTOP.md) obtains consent before queries.
 
 ## One checked confirmed-chain snapshot
 

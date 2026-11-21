@@ -6,9 +6,9 @@ Monoform Wallet is an early, security-first open-source project. It rejects swap
 cards, yield, ads, accounts, telemetry, KYC, and financial clutter. The product has
 three verbs: **receive, send, verify**.
 
-This repository currently contains the product foundation, a runnable non-signing Rust
-interface, and the original web interface study. **It is not a wallet yet. Do not enter
-a seed phrase or use it with real funds.**
+This repository contains the product foundation, an opt-in Bitcoin testnet4 watch-only
+desktop screen, and the original web interface study. **It is not a complete wallet.
+Do not enter a seed phrase or use it with real funds.**
 
 ## Product principles
 
@@ -55,7 +55,7 @@ behind narrow compile-time adapters. See [Architecture](docs/ARCHITECTURE.md),
 [Threat model](docs/THREAT_MODEL.md), [Locked decisions](docs/LOCKED_DECISIONS.md),
 [Phase 3 Monero preparation](docs/PHASE_3_MONERO.md), and [Roadmap](ROADMAP.md).
 
-Monoform supports Bitcoin, Monero, and Ethereum mainnet. Ethereum assets are limited to
+The planned network scope is Bitcoin, Monero, and Ethereum mainnet. Ethereum assets are limited to
 reviewed ERC-20 contracts committed in source. It does not import arbitrary tokens,
 load remote token lists, bridge assets, or sign unknown contract calls.
 
@@ -71,9 +71,21 @@ The interface uses eframe 0.36.1 with its Glow renderer and native accessibility
 support. The offline seed core adds `bip39`, `unicode-normalization`, and `zeroize`.
 `Cargo.lock` fixes the complete dependency graph.
 
+This opens a small offline welcome screen. To build the explicit watch-only connection
+and refresh view on macOS/Linux:
+
+```sh
+cargo run --locked --features desktop,core-rpc
+```
+
+The connected edition requires an **existing protected testnet4 account** and a
+configured local Bitcoin Core node. Account creation/import is not yet exposed in
+the interface. It starts with empty folder paths and unchecked disclosure consent;
+only an explicit Refresh starts work. See [Watch-only desktop](docs/WATCH_ONLY_DESKTOP.md).
+
 The default build contains the offline core and protected public-state storage.
-The `desktop` feature adds the demonstration interface; `core-rpc` separately adds
-the read-only local Bitcoin backend. Neither enables the other. See the dated
+The `desktop` feature adds the interface; `core-rpc` separately adds the read-only
+local Bitcoin backend. Neither enables the other. See the dated
 [dependency and feature review](docs/DEPENDENCY_REVIEW.md) for measured footprints,
 known public advisories and remaining release gates. The subsequent
 [dependency remediation](docs/DEPENDENCY_REMEDIATION.md) upgrades the crypto stack
@@ -86,8 +98,8 @@ review gates pass.
 The offline Bitcoin core can export watch-only descriptors and encode/restore versioned
 testnet4 public account state with receive/change counters. A separate offline module
 persists only this public state using macOS Keychain or Linux Secret Service-backed
-encryption and atomic address reservation. It is not wired into the UI and does not
-store seeds or private keys. See [Public-state codec](docs/BITCOIN_PUBLIC_STATE.md) and
+encryption and atomic address reservation. The opt-in desktop refresh opens this
+store; it never stores seeds or private keys. See [Public-state codec](docs/BITCOIN_PUBLIC_STATE.md) and
 [Storage policy, protocol, and limits](docs/PUBLIC_STATE_STORAGE.md).
 
 An opt-in read-only [Bitcoin Core client](docs/BITCOIN_CORE_BACKEND.md) verifies
@@ -101,13 +113,15 @@ Separate [UTXO observations](docs/BITCOIN_UTXOS.md) return checked confirmed out
 and exact satoshi totals for explicit address ranges, not spendable/global balances.
 Separate [pending projections](docs/BITCOIN_MEMPOOL.md) reconcile bounded local
 mempool spends/receipts, including descendants, and reject changing snapshots.
-No UI networking is enabled; the default build stays offline.
-Networking requires the explicit `core-rpc` feature.
+The default and `desktop`-only builds stay offline. Desktop networking requires
+both features and explicit user consent followed by Refresh; there is no background polling.
 
 An explicit [watch-only refresh](docs/BITCOIN_REFRESH.md) now joins protected state,
 complete discovery and fresh confirmed/pending observations under one budget. It
 requires matching chain anchors before saving counters and reports uncertain or
-late commits explicitly. Desktop connection and disclosure consent remain the next step.
+late commits explicitly. The desktop now uses this operation on a worker thread and
+shows exact BTC totals and observation age. Watch-only account setup from validated
+public exports is the next module; seed entry and signing remain gated.
 
 Linux builds also require the D-Bus development library (`libdbus-1-dev` on Debian/
 Ubuntu). Storage needs an existing persistent Secret Service provider in the user's
