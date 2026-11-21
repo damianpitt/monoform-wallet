@@ -32,7 +32,7 @@ bitcoin_hashes = { version = "=0.14.101", default-features = false }
 bech32 = { version = "=0.11.1", default-features = false, features = ["alloc"] }
 chacha20poly1305 = { version = "=0.10.1", default-features = false, features = ["alloc"] }
 getrandom = { version = "=0.4.3", default-features = false }
-rustix = { version = "=1.1.4", default-features = false, features = ["std", "fs", "process"] }
+rustix = { version = "=1.1.6", default-features = false, features = ["std", "fs", "process"] }
 eframe = { version = "=0.36.1", default-features = false, optional = true, features = [
     "accesskit",
     "default_fonts",

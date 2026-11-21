@@ -122,3 +122,15 @@ recommendations](BITCOIN_DISCOVERY_STORAGE.md), with complete account matching a
 counters that cannot move backward. Independent
 crypto/application review, packaged storage lifecycle validation, reproducible builds,
 notices/SBOM and release controls remain gates before real-funds use.
+
+## Policy maintenance — 2026-11-21
+
+The current policy check identified newly published
+[RUSTSEC-2026-0486](https://rustsec.org/advisories/RUSTSEC-2026-0486.html), affecting
+rustix's extended-attribute buffer handling. The direct pin advances from 1.1.4 to
+the minimum patched **1.1.6**, without an exception. The registry also marked the
+locked transitive `async-executor 1.14.0` as yanked; **1.14.1** replaces it within
+the existing dependency constraints. No feature flags, production Rust lines or
+dependency names are added; the lockfile remains 473 entries. Regression tests,
+native Keychain checks and advisory/license/source policy pass. The three existing
+accessibility maintenance exceptions and their 2026-12-01 CI deadline remain in force.
