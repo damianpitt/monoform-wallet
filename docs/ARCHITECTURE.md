@@ -86,12 +86,22 @@ a shared network budget, matching history/balance anchors and deferred atomic
 counter application. It returns no partial balance on failure and distinguishes
 uncertain application from an acknowledged commit that exceeds the deadline.
 
+The [protected receive coordinator](BITCOIN_RECEIVE.md) obtains fresh confirmed
+discovery and rechecks the exact tip under one work budget. A crate-private store
+operation binds the full account, merges both counters upward, enforces the confirmed
+20-address gap and commits discovery plus one reservation atomically. It returns
+the address only after acknowledged saving within the deadline. No cached UI scan
+can issue, and neither pending activity nor a zero balance relaxes the gap policy.
+
 The opt-in [watch-only desktop](WATCH_ONLY_DESKTOP.md) obtains disclosure consent
 for two explicit local folders and opens the store inside a single worker thread.
 Refresh returns only aggregate amounts, height, time or typed failure to the UI. Paths,
 consent and observations are not persisted. Editing either folder revokes consent
 and clears results; a refresh clears prior values and locks inputs until completion.
 No startup queries, automatic retries or secret entry are enabled.
+The explicit receive action uses the same worker/consent gate and returns only a
+saved public address, index and history observation metadata. These remain transient
+and are never automatically copied. An error replaces the previous result.
 
 Explicit [watch-only setup](WATCH_ONLY_SETUP.md) reads a bounded private export file
 on that worker and returns only a canonical validated public record for review.

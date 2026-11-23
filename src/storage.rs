@@ -35,6 +35,7 @@ pub enum StorageError {
     Rollback,
     Derivation,
     AccountMismatch,
+    GapLimit,
 }
 
 // Only native credentials are constructible through the public API; mocks are test-only.
@@ -117,21 +118,52 @@ impl PublicStateStore {
         &mut self,
         discovery: &crate::core_rpc::Discovery,
     ) -> Result<(), StorageError> {
-        let candidate = &discovery.recommendation;
         let (mut account, mut anchor) = self.load()?;
+        let before = (account.next_receive, account.next_change);
+        Self::merge_discovery(&mut account, discovery)?;
+        if before == (account.next_receive, account.next_change) {
+            return Ok(());
+        }
+        self.commit(&account, &mut anchor)
+    }
+
+    #[cfg(feature = "core-rpc")]
+    fn merge_discovery(
+        account: &mut BitcoinTestnetAccount,
+        discovery: &crate::core_rpc::Discovery,
+    ) -> Result<(), StorageError> {
+        let candidate = &discovery.recommendation;
         // A 32-bit origin fingerprint alone is not identity: compare the full XPub,
         // including its chain code, parent fingerprint, depth and child number.
         if account.fingerprint != candidate.fingerprint || account.account != candidate.account {
             return Err(StorageError::AccountMismatch);
         }
-        let receive = account.next_receive.max(candidate.next_receive);
-        let change = account.next_change.max(candidate.next_change);
-        if (receive, change) == (account.next_receive, account.next_change) {
-            return Ok(());
+        account.next_receive = account.next_receive.max(candidate.next_receive);
+        account.next_change = account.next_change.max(candidate.next_change);
+        Ok(())
+    }
+
+    /// Only the fresh Core coordinator may invoke this; cached UI scans cannot issue.
+    #[cfg(feature = "core-rpc")]
+    pub(crate) fn reserve_discovered_receive(
+        &mut self,
+        discovery: &crate::core_rpc::Discovery,
+    ) -> Result<(String, u32), StorageError> {
+        let (mut account, mut anchor) = self.load()?;
+        Self::merge_discovery(&mut account, discovery)?;
+        let index = account.next_receive;
+        let used_next = discovery.receive().last_used.map_or(0, |last| last + 1);
+        // Complete discovery plus upward merging guarantee index >= used_next. Include
+        // this address in the 20-unused allowance; pending activity never expands it.
+        if index - used_next >= crate::core_rpc::GAP {
+            return Err(StorageError::GapLimit);
         }
-        account.next_receive = receive;
-        account.next_change = change;
-        self.commit(&account, &mut anchor)
+        let address = account
+            .next_receive_address()
+            .map_err(|_| StorageError::Derivation)?;
+        // Both discovered branches and this reservation share one atomic commit.
+        self.commit(&account, &mut anchor)?;
+        Ok((address, index))
     }
 
     fn connect(path: &Path, create: bool) -> Result<Self, StorageError> {

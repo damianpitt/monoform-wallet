@@ -83,7 +83,7 @@ The connected edition can open an existing protected testnet4 account or
 offline: review the complete public record and counters, then explicitly approve
 protected storage creation. Recovery phrases and private keys are not accepted.
 A configured local Bitcoin Core node and separate disclosure consent are required
-for Refresh. It starts with empty paths and unchecked consent; there are no startup
+for Refresh or New receive address. It starts with empty paths and unchecked consent; there are no startup
 queries. See [Watch-only desktop](docs/WATCH_ONLY_DESKTOP.md).
 
 The default build contains the offline core and protected public-state storage.
@@ -117,15 +117,19 @@ and exact satoshi totals for explicit address ranges, not spendable/global balan
 Separate [pending projections](docs/BITCOIN_MEMPOOL.md) reconcile bounded local
 mempool spends/receipts, including descendants, and reject changing snapshots.
 The default and `desktop`-only builds stay offline. Desktop networking requires
-both features and explicit user consent followed by Refresh; there is no background polling.
+both features and explicit user consent followed by Refresh or New receive address;
+there is no background polling.
 
 An explicit [watch-only refresh](docs/BITCOIN_REFRESH.md) now joins protected state,
 complete discovery and fresh confirmed/pending observations under one budget. It
 requires matching chain anchors before saving counters and reports uncertain or
 late commits explicitly. The desktop now uses this operation on a worker thread and
 shows exact BTC totals and observation age. Watch-only setup now accepts the existing
-Monoform version-1 public export format. Next is a protected testnet receive flow
-with discovery and gap-limit safeguards; seed entry and signing remain gated.
+Monoform version-1 public export format. The [protected receive flow](docs/BITCOIN_RECEIVE.md)
+requires fresh discovery, enforces the 20-unused-address gap and returns an address
+only after saving its reservation together with discovered counters. Next is
+reopening and displaying previously reserved addresses without advancing counters;
+seed entry and signing remain gated.
 
 Linux builds also require the D-Bus development library (`libdbus-1-dev` on Debian/
 Ubuntu). Storage needs an existing persistent Secret Service provider in the user's

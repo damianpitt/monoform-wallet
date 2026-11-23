@@ -4,6 +4,8 @@ The macOS/Linux desktop can open an **existing protected Bitcoin testnet4 accoun
 and run one bounded watch-only refresh at a time. The subsequent
 [watch-only setup module](WATCH_ONLY_SETUP.md) adds explicit creation from public
 exports. Seed entry, signing, mainnet and other chains remain unimplemented.
+The subsequent [receive module](BITCOIN_RECEIVE.md) adds explicit guarded receive
+issuance under the same consent and single-worker boundary.
 
 ```sh
 cargo run --locked --features desktop,core-rpc
@@ -98,4 +100,5 @@ maintenance exceptions still expire on 2026-12-01 UTC.
 
 The subsequent [setup module](WATCH_ONLY_SETUP.md) implements reviewed public imports
 without recovery phrases or private keys. Its verification and audit cost are
-recorded separately. Next is a protected receive flow with discovery and gap-limit safeguards.
+recorded separately. The [protected receive flow](BITCOIN_RECEIVE.md) is now
+implemented; reopening and redisplaying prior reservations is next.

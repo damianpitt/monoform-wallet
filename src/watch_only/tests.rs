@@ -1,6 +1,7 @@
 //! Synthetic UI state only; no real accounts, cookies, credentials or network node.
 use super::*;
 
+mod receive;
 mod setup;
 
 fn balance() -> Completion {
@@ -166,24 +167,26 @@ fn narrow_and_full_size_frames_do_not_auto_connect_or_show_demo_money() {
 #[test]
 fn editing_either_folder_revokes_consent_and_discards_old_figures() {
     for id in ["account-folder", "node-folder"] {
-        let context = egui::Context::default();
-        let mut app = configured();
-        app.consent = true;
-        app.outcome = Some(Ok(balance()));
-        let mut first = context.run_ui(Default::default(), |ui| app.content(ui));
-        first.textures_delta.clear();
-        context.memory_mut(|memory| memory.request_focus(egui::Id::new(id)));
-        let mut edited = context.run_ui(
-            egui::RawInput {
-                events: vec![egui::Event::Text("-changed".into())],
-                ..Default::default()
-            },
-            |ui| app.content(ui),
-        );
-        edited.textures_delta.clear();
-        assert!(!app.consent);
-        assert!(app.outcome.is_none());
-        assert!(app.pending.is_none());
+        for prior in [balance(), receive::received()] {
+            let context = egui::Context::default();
+            let mut app = configured();
+            app.consent = true;
+            app.outcome = Some(Ok(prior));
+            let mut first = context.run_ui(Default::default(), |ui| app.content(ui));
+            first.textures_delta.clear();
+            context.memory_mut(|memory| memory.request_focus(egui::Id::new(id)));
+            let mut edited = context.run_ui(
+                egui::RawInput {
+                    events: vec![egui::Event::Text("-changed".into())],
+                    ..Default::default()
+                },
+                |ui| app.content(ui),
+            );
+            edited.textures_delta.clear();
+            assert!(!app.consent);
+            assert!(app.outcome.is_none());
+            assert!(app.pending.is_none());
+        }
     }
 }
 

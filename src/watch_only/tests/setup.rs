@@ -7,7 +7,7 @@ use std::{
     os::unix::fs::{OpenOptionsExt, PermissionsExt, symlink},
 };
 
-const PUBLIC_EXPORT: &str = "monoform:1:bitcoin-testnet4:5436d724:tpubDCWivZp6qaqCALCt8MyLqAb3awnWm4hfbBPjdZqirYFXYeZ5YsfbWVaPacULZTGtK1RPBSZ92UWNjnhL4fB9UVrF2FjgW8cgmBjxPBmB4iB:0:0:2d159afbde83ae83f819477437aabcd2299049210fda77d2d236211c5907f718";
+pub(super) const PUBLIC_EXPORT: &str = "monoform:1:bitcoin-testnet4:5436d724:tpubDCWivZp6qaqCALCt8MyLqAb3awnWm4hfbBPjdZqirYFXYeZ5YsfbWVaPacULZTGtK1RPBSZ92UWNjnhL4fB9UVrF2FjgW8cgmBjxPBmB4iB:0:0:2d159afbde83ae83f819477437aabcd2299049210fda77d2d236211c5907f718";
 
 fn write_export(path: &Path, bytes: &[u8]) {
     fs::OpenOptions::new()

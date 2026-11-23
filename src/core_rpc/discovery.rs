@@ -7,7 +7,7 @@ use std::{
     time::Instant,
 };
 
-const GAP: u32 = 20;
+pub(crate) const GAP: u32 = 20;
 const BLOCK_CHUNK: u32 = 4096;
 
 /// Explicit work limits; defaults are conservative, never an unlimited recovery scan.
@@ -174,7 +174,7 @@ fn incomplete(reason: IncompleteReason) -> DiscoveryError {
     DiscoveryError::Incomplete(reason)
 }
 
-fn ready(status: &NodeStatus) -> Result<(), DiscoveryError> {
+pub(super) fn ready(status: &NodeStatus) -> Result<(), DiscoveryError> {
     if status.pruned {
         return Err(incomplete(IncompleteReason::PrunedHistory));
     }

@@ -2,11 +2,13 @@
 mod budget;
 mod discovery;
 mod mempool;
+mod receive;
 mod refresh;
 mod utxos;
 use crate::{BitcoinTestnetAccount, bitcoin_address, bitcoin_branch};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use budget::RpcBudget as Budget;
+pub(crate) use discovery::GAP;
 pub use discovery::{
     BranchDiscovery, Discovery, DiscoveryError, DiscoveryLimits, IncompleteReason,
 };
@@ -14,6 +16,7 @@ pub use mempool::{
     MempoolError, MempoolIncompleteReason, MempoolObservation, PendingReceipt, PendingSpend,
     PendingSummary,
 };
+pub use receive::{ReceiveAddress, ReceiveError};
 pub use refresh::{RefreshError, WatchOnlyRefresh};
 use rustix::fs::{Mode, OFlags};
 use serde::{Deserialize, de::DeserializeOwned};

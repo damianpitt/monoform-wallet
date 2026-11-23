@@ -91,5 +91,6 @@ and test wiring. No dependency, version, Cargo feature or lockfile changes:
 **16 production direct dependency names, 473 locked entries**. Existing accessibility
 maintenance exceptions retain their 2026-12-01 UTC deadline.
 
-Next: a protected testnet receive flow with fresh discovery and gap-limit safeguards,
-returning an address only after its reservation is durably acknowledged.
+The subsequent [protected receive flow](BITCOIN_RECEIVE.md) requires fresh discovery
+and gap-limit checks before acknowledged reservation. Reopening and redisplaying
+prior reservations without consuming another index is next.

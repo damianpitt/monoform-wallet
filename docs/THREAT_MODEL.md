@@ -137,6 +137,21 @@ No automatic network query or address issuance follows import. The original expo
 remains plaintext and privacy-sensitive. Existing final/staged state and credentials
 are preserved; uncertain creation requires recovery, never automatic overwrite/reset.
 
+[Protected receive issuance](BITCOIN_RECEIVE.md) requires new confirmed-history
+discovery and a matching recent, unpruned final tip. The full account is checked
+again under the store lock, and saved counters cannot move backward. Discovery
+progress and the reservation share one commit; rejected gaps or failed network
+work save no new recommendation. No address is returned after uncertain or late
+saving. At most 20 receive addresses may lie beyond the last confirmed-used index;
+pending transactions cannot expand this seed-recovery allowance.
+
+This cannot detect unused addresses missing from an old export or coordinate two
+independent issuing stores. Use one active issuing copy per account. Node omissions,
+reorgs during OS saving, coordinated file/credential rollback and compromised OS
+remain trust limits. Clearing/closing the UI does not undo a reservation. Previous
+address redisplay is a separate next step; gaps/counters must never be reset to
+work around an issuance refusal.
+
 ## Review cadence
 
 Update this model with every signing feature, platform, network, update mechanism,

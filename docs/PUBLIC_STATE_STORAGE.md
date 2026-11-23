@@ -48,6 +48,10 @@ deleting/replacing it undermines cooperative locking.
   saved counters. Editing that snapshot does not modify the store.
 - `reserve_receive_address()` / `reserve_change_address()`: derive one address,
   persist its advanced counter, and return the address **only after commit succeeds**.
+  These lower-level offline APIs do not enforce fresh discovery or gap policy.
+  The desktop uses the [protected Core receive coordinator](BITCOIN_RECEIVE.md),
+  whose crate-private store step commits both discovery branches and one reservation
+  together after full-account matching and a confirmed-history gap check.
 - `apply_discovery(&result)` (`core-rpc`): matches the complete account bound to a
   successful discovery, merges both counters upward and saves them atomically.
 

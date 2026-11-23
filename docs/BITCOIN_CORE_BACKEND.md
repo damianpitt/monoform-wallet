@@ -9,7 +9,7 @@
 and an explicit Refresh; there is no background polling. Callers may explicitly
 apply discovery counters through the separate protected store.
 
-The public API has six operations:
+The public API has seven operations:
 
 - `status()` reads chain identity and node-reported sync/tip information.
 - `verify_account(&BitcoinTestnetAccount)` checks both public descriptors and
@@ -25,6 +25,9 @@ The public API has six operations:
 - `refresh_watch_only(&mut store, limits)` joins protected state, discovery and pending
   reconciliation with [one budget and explicit commit outcomes](BITCOIN_REFRESH.md).
   It saves local public counters after observation checks; Core RPC remains read-only.
+- `receive_address(&mut store, limits)` requires new confirmed discovery, the same
+  final tip and the 20-address gap policy, then atomically saves discovery and one
+  receive reservation. See [protected receive issuance](BITCOIN_RECEIVE.md).
 
 The private RPC allowlist is exactly `getblockchaininfo`, `getblockhash`,
 `getdescriptorinfo`, `deriveaddresses`, `scanblocks` (start only),

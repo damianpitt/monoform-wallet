@@ -3,7 +3,10 @@ mod setup;
 use crate::MUTED;
 use eframe::egui::{self, RichText};
 use monoform_wallet::{
-    core_rpc::{CoreError, CoreTestnet4, DiscoveryError, MempoolError, RefreshError, UtxoError},
+    core_rpc::{
+        CoreError, CoreTestnet4, DiscoveryError, MempoolError, ReceiveAddress, ReceiveError,
+        RefreshError, UtxoError,
+    },
     storage::{PublicStateStore, StorageError},
 };
 use std::{
@@ -29,17 +32,20 @@ enum Failure {
     Store(StorageError),
     Node(CoreError),
     Refresh(RefreshError),
+    Receive(ReceiveError),
 }
 
 enum Completion {
     Balance(Balance),
     Reviewed(String),
     Created,
+    Receive(ReceiveAddress),
 }
 
 #[derive(Clone, Copy)]
 enum Action {
     Refresh,
+    Receive,
     Review,
     Create,
 }
@@ -83,13 +89,23 @@ fn refresh(wallet: &Path, node: &Path) -> Outcome {
     }))
 }
 
+fn receive_address(wallet: &Path, node: &Path) -> Outcome {
+    let mut store = PublicStateStore::open(wallet).map_err(Failure::Store)?;
+    let core = CoreTestnet4::new(node).map_err(Failure::Node)?;
+    core.receive_address(&mut store, Default::default())
+        .map(Completion::Receive)
+        .map_err(Failure::Receive)
+}
+
 impl MonoformApp {
     fn can_start(&self, action: Action) -> bool {
         if self.pending.is_some() || !valid_path(&self.wallet) {
             return false;
         }
         match action {
-            Action::Refresh => !self.setup && self.consent && valid_path(&self.node),
+            Action::Refresh | Action::Receive => {
+                !self.setup && self.consent && valid_path(&self.node)
+            }
             Action::Review => self.setup && valid_path(&self.export),
             Action::Create => {
                 self.setup
@@ -117,6 +133,7 @@ impl MonoformApp {
             .spawn(move || {
                 let result = match action {
                     Action::Refresh => refresh(Path::new(&wallet), Path::new(&node)),
+                    Action::Receive => receive_address(Path::new(&wallet), Path::new(&node)),
                     Action::Review => {
                         setup::read_export(Path::new(&export)).map(Completion::Reviewed)
                     }
@@ -202,8 +219,8 @@ impl MonoformApp {
             if self.setup {
                 ui.label("Select only a Monoform public export, never a recovery phrase or private-key file.");
             } else {
-                ui.label("Refreshing shares this account’s linked addresses with your local node and saves discovered address counters.");
-                if ui.checkbox(&mut self.consent, "Allow this connection and refresh").changed() {
+                ui.label("Refreshing or requesting an address shares this account’s linked addresses with your local node and saves address counters.");
+                if ui.checkbox(&mut self.consent, "Allow this connection").changed() {
                     self.outcome = None;
                 }
             }
@@ -220,6 +237,16 @@ impl MonoformApp {
         {
             self.start(ui.ctx(), action);
         }
+        if !self.setup
+            && ui
+                .add_enabled(
+                    self.can_start(Action::Receive),
+                    egui::Button::new("New receive address"),
+                )
+                .clicked()
+        {
+            self.start(ui.ctx(), Action::Receive);
+        }
         if self.pending.is_some() {
             ui.spinner();
             ui.label("Working… System authorization may be required.");
@@ -229,6 +256,20 @@ impl MonoformApp {
                 *self = Self::default();
             }
             match &self.outcome {
+                Some(Ok(Completion::Receive(received))) => {
+                    ui.label(format!("Saved receive address · index {}", received.index));
+                    ui.add(
+                        egui::Label::new(RichText::new(&received.address).monospace())
+                            .wrap()
+                            .selectable(true),
+                    );
+                    ui.label(format!(
+                        "Bitcoin testnet4 only · history through block {}",
+                        received.anchor_height
+                    ));
+                    show_age(ui, received.observed_at);
+                    ui.label("Verify the full address and network before sharing. Each request saves a new address; use one active issuing copy of this account.");
+                }
                 Some(Ok(Completion::Reviewed(record))) => {
                     ui.label("Bitcoin testnet4 · BIP84 account 0 · m/84'/1'/0'");
                     ui.label("Compare the full public account record and next receive/change counters with your trusted source. A checksum does not prove ownership or freshness; old counters can reuse addresses.");
@@ -267,17 +308,8 @@ impl MonoformApp {
                         ));
                     }
                     ui.label(format!("Through block {}", balance.height));
-                    match SystemTime::now().duration_since(balance.observed_at) {
-                        Ok(age) => {
-                            ui.label(format!("Observed {} seconds ago", age.as_secs()));
-                        }
-                        Err(_) => {
-                            ui.label("Observation time unavailable");
-                        }
-                    }
+                    show_age(ui, balance.observed_at);
                     ui.label("Scoped totals, including immature coins. Pending transactions may change. These are not spendable balances.");
-                    // Repaint the age label only; never initiate background queries.
-                    ui.ctx().request_repaint_after(Duration::from_secs(1));
                 }
                 Some(Err(error)) => {
                     ui.label(message(error));
@@ -294,6 +326,19 @@ impl MonoformApp {
                 .color(MUTED),
         );
     }
+}
+
+fn show_age(ui: &mut egui::Ui, observed_at: SystemTime) {
+    match SystemTime::now().duration_since(observed_at) {
+        Ok(age) => {
+            ui.label(format!("Observed {} seconds ago", age.as_secs()));
+        }
+        Err(_) => {
+            ui.label("Observation time unavailable");
+        }
+    }
+    // Repaint the age label only; never initiate background queries.
+    ui.ctx().request_repaint_after(Duration::from_secs(1));
 }
 
 fn message(error: &Failure) -> &'static str {
@@ -313,7 +358,9 @@ fn message(error: &Failure) -> &'static str {
         Failure::Create(_) => {
             "Creation was not acknowledged. Check the private account folder and system credential store. A partial account may exist; try opening it to recover before attempting creation again."
         }
-        Failure::Store(error) | Failure::Refresh(RefreshError::Load(error)) => match error {
+        Failure::Store(error)
+        | Failure::Refresh(RefreshError::Load(error))
+        | Failure::Receive(ReceiveError::Load(error)) => match error {
             StorageError::KeyStore => "Unlock your system credential store and try again.",
             StorageError::Busy => "This account is already open in another process.",
             StorageError::InvalidState | StorageError::Rollback => {
@@ -323,6 +370,7 @@ fn message(error: &Failure) -> &'static str {
         },
         Failure::Node(error)
         | Failure::Refresh(RefreshError::Discovery(DiscoveryError::Backend(error)))
+        | Failure::Receive(ReceiveError::Discovery(DiscoveryError::Backend(error)))
         | Failure::Refresh(RefreshError::Observation(MempoolError::Backend(error)))
         | Failure::Refresh(RefreshError::Observation(MempoolError::Confirmed(
             UtxoError::Backend(error),
@@ -344,10 +392,28 @@ fn message(error: &Failure) -> &'static str {
         Failure::Refresh(RefreshError::SnapshotChanged) => {
             "The chain changed during refresh. Try again."
         }
+        Failure::Receive(ReceiveError::SnapshotChanged)
+        | Failure::Receive(ReceiveError::Discovery(DiscoveryError::Reorg))
+        | Failure::Refresh(RefreshError::Discovery(DiscoveryError::Reorg)) => {
+            "The chain changed. No new result was accepted; try again."
+        }
+        Failure::Receive(ReceiveError::GapLimit) => {
+            "Receive gap limit reached. Use an already reserved address and wait for confirmed activity. Do not lower saved counters."
+        }
+        Failure::Receive(ReceiveError::Commit(_)) => {
+            "Saving failed and counters may have advanced. No address was returned. Retry to recover and verify; never reset the counters."
+        }
+        Failure::Receive(ReceiveError::CommittedDeadline) => {
+            "The address counter was saved, but too late to accept an address for display. A retry may skip an index; never reset the counters."
+        }
+        Failure::Receive(ReceiveError::Deadline) => {
+            "The receive operation exceeded its time limit. No address was returned."
+        }
         Failure::Refresh(RefreshError::Deadline) => {
             "The refresh exceeded its time limit. Try again."
         }
-        Failure::Refresh(RefreshError::Discovery(_)) => {
+        Failure::Refresh(RefreshError::Discovery(_))
+        | Failure::Receive(ReceiveError::Discovery(_)) => {
             "History discovery is incomplete. Check node sync, the block filter index and available history; the scan may also exceed its limits."
         }
         Failure::Refresh(RefreshError::Observation(_)) => {

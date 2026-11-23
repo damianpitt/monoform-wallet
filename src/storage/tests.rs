@@ -9,6 +9,8 @@ use tempfile::TempDir;
 #[cfg(feature = "core-rpc")]
 mod discovery;
 #[cfg(feature = "core-rpc")]
+mod receive;
+#[cfg(feature = "core-rpc")]
 mod refresh;
 
 // Public Trezor vector only; never protect real funds with these words.
@@ -502,8 +504,15 @@ fn native_store_round_trip() {
                     .is_ok()
             );
             crate::core_rpc::rpc_calls(server);
+            let responses = receive::replies(&persisted.public_account()?, [Some(7), Some(8)]);
+            let (core, _cookie, server) = crate::core_rpc::mock_core(responses);
+            let received = core
+                .receive_address(&mut persisted, Default::default())
+                .map_err(|_| StorageError::Derivation)?;
+            assert_eq!(received.index, 8);
+            crate::core_rpc::rpc_calls(server);
             drop(persisted);
-            assert_eq!(counters(&PublicStateStore::open(&path)?), (8, 9));
+            assert_eq!(counters(&PublicStateStore::open(&path)?), (9, 9));
         }
         Ok(())
     })();

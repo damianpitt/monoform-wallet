@@ -42,7 +42,8 @@ Dates are intentionally absent. Security gates, not launch pressure, advance a p
 - [x] Bounded watch-only refresh joining protected state, discovery and balances
 - [x] Explicit watch-only desktop connection, refresh/status and disclosure consent
 - [x] Watch-only desktop account setup from validated public exports
-- [ ] Protected testnet receive flow with discovery and gap-limit safeguards
+- [x] Protected testnet receive flow with discovery and gap-limit safeguards
+- [ ] Reopen and display previously reserved receive addresses without advancing counters
 - [ ] Receive, coin-aware send, fee selection, and transaction review
 - [ ] Encrypted local keystore using operating-system facilities
 - [ ] Memory-zeroization tests and secret-redaction tests
@@ -69,7 +70,9 @@ identity and descriptor compatibility, with separate bounded
 [scoped confirmed UTXO balances](docs/BITCOIN_UTXOS.md), plus separate
 [bounded pending projections](docs/BITCOIN_MEMPOOL.md). It is not a complete wallet/history backend;
 the default and `desktop`-only builds still make no network calls. The combined
-desktop/backend build queries only after explicit consent and Refresh.
+desktop/backend build queries only after explicit consent and Refresh or New receive
+address. [Receive issuance](docs/BITCOIN_RECEIVE.md) checks fresh confirmed history
+and the gap limit, then atomically saves discovery and the reservation before display.
 
 Exit gate: test vectors pass, no mainnet endpoints exist, threat-model review is
 complete, and two maintainers approve the signing path.
